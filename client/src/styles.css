@@ -173,3 +173,25 @@ body{background:radial-gradient(ellipse at 50% -15%,#25203d 0%,#11121b 42%,#0d0e
 .doodle{opacity:.65}
 @media(max-width:760px){.footer{flex-wrap:wrap;justify-content:center;gap:8px 16px;padding:14px 0}.footer-credit{width:100%;justify-content:center;flex-wrap:wrap;gap:5px 12px}.footer-tagline{display:none}}
 @media(prefers-reduced-motion:reduce){body{background:#0d0e14}}
+
+/* NaPiTA feature pack: profile cards, mode controls, challenge flags and touch polish. */
+.extra-settings{margin-top:14px}
+.profile-strip{display:flex;align-items:center;gap:22px;margin:26px 0 10px;padding:22px 24px;animation:card-rise .55s both}
+.profile-strip h2{margin:5px 0;color:var(--ink);font-size:20px}
+.profile-strip p{margin:0;color:var(--muted);font-size:12px}
+.profile-stats{display:flex;gap:22px;margin-left:auto}
+.profile-stats div{display:grid;gap:3px;text-align:center;min-width:54px}
+.profile-stats strong{font-size:20px;color:#b7a8ff;font-variant-numeric:tabular-nums}
+.profile-stats span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.sound-toggle{white-space:nowrap}
+.challenge-button{margin-left:8px;padding:4px 7px;border:1px solid #51486f;border-radius:7px;background:#252139;color:#c8bdff;font-size:10px;cursor:pointer;transition:background .2s,border-color .2s}
+.challenge-button:hover{background:#393055;border-color:#a99aff}
+.answer-reveal-grid{gap:10px}
+.reveal-answer{gap:7px;flex-wrap:wrap}
+.reveal-answer strong{overflow-wrap:anywhere}
+.timer-urgent{animation:timer-pulse .8s ease-in-out infinite alternate}
+@keyframes timer-pulse{from{box-shadow:0 0 0 0 #ff829022;transform:scale(1)}to{box-shadow:0 0 0 5px #ff829012;transform:scale(1.025)}}
+@keyframes card-rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.primary-button:active,.secondary-button:active,.quiet-button:active{transform:translateY(1px) scale(.99)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #a99aff;outline-offset:3px}
+@media(max-width:760px){.profile-strip{align-items:stretch;flex-wrap:wrap;padding:18px;gap:14px}.profile-stats{width:100%;margin:0;justify-content:space-around;gap:8px}.sound-toggle{width:100%}.challenge-button{margin-left:0}.extra-settings{grid-template-columns:1fr}}

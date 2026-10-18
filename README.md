@@ -65,3 +65,16 @@ Room data is kept in server memory. A server restart clears active rooms, and th
 6. Open the Render URL and test room creation and joining in two separate browsers.
 
 The Express server serves the built `dist` folder and handles Socket.IO on the same origin, so you can deploy the frontend and multiplayer server together as one service. Active rooms are kept in memory and are cleared if the service restarts.
+
+## Feature pack update
+- Optional Chaos mode doubles the points earned in one server-selected category each round.
+- Optional Telugu category labels (the game still accepts free-text answers; it does not automatically verify Telugu spelling or category truth).
+- Countdown tones and submit confirmation tones, with a user-controlled sound toggle.
+- STOP / lock-answers action, round reveal, and animated urgency styling for the final seconds.
+- Local player card tracks games, wins, and best total score in that browser only.
+- Players can flag another player's answer during results for host review. A flag does not automatically alter scores; there is no automated dictionary verification or formal vote-to-overturn system yet.
+
+## Remaining before a wider launch
+- Room state is still in memory and will clear on a server restart. Use a managed database (for example Postgres) before implementing persistent profiles, cross-device stats, daily challenges, or room recovery across deploys.
+- Category correctness needs a curated multilingual dictionary or a moderation/consensus workflow. The current scoring rule checks starting letter and duplicate answers, not factual category membership.
+- Test and build in the target deployment environment after pushing changes. Dependency installation could not be completed in the authoring environment, so the full production build and integration suite were not verified here.

@@ -8,6 +8,7 @@ import { randomBytes, randomUUID } from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATEGORIES = ['name', 'place', 'animal', 'thing'];
+const VALID_MODES = ['classic', 'chaos'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const RECONNECT_GRACE_MS = 60_000;
 const MAX_PLAYERS = 12;
@@ -37,10 +38,10 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
   }
   function snapshot(room) {
     return {
-      code: room.code, hostId: room.hostId, status: room.status, settings: room.settings,
+      code: room.code, hostId: room.hostId, status: room.status, settings: room.settings, gameId: room.gameId || null,
       letter: room.letter, round: room.round, timeLeft: timeLeft(room), endsAt: room.endsAt,
       players: [...room.players.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, score: p.score, answers: { ...p.answers }, submitted: p.submitted, connected: p.connected })),
-      results: room.results.map(result => ({ ...result, answers: { ...result.answers }, categoryPoints: { ...result.categoryPoints } }))
+      results: room.results.map(result => ({ ...result, answers: { ...result.answers }, categoryPoints: { ...result.categoryPoints } })), bonusCategory: room.bonusCategory || null
     };
   }
   const emitRoom = room => io.to(room.code).emit('room:update', snapshot(room));
@@ -79,6 +80,14 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
         categoryPoints.get(player.id)[key] = earned;
       }
     }
+    if (room.settings.mode === 'chaos') {
+      const bonusCategory = CATEGORIES[randomBytes(1)[0] % CATEGORIES.length];
+      for (const player of players) {
+        const base = categoryPoints.get(player.id)[bonusCategory];
+        if (base > 0) { points.set(player.id, points.get(player.id) + base); categoryPoints.get(player.id)[bonusCategory] = base * 2; }
+      }
+      room.bonusCategory = bonusCategory;
+    } else room.bonusCategory = null;
     for (const player of players) player.score += points.get(player.id);
     room.results = players.map(p => ({ id: p.id, name: p.name, answers: { ...p.answers }, categoryPoints: categoryPoints.get(p.id), roundPoints: points.get(p.id), totalScore: p.score }))
       .sort((a, b) => b.totalScore - a.totalScore || a.name.localeCompare(b.name));
@@ -87,7 +96,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
   }
   function startRound(room) {
     if (room.timer) clearInterval(room.timer);
-    room.status = 'playing'; room.round += 1;
+    room.status = 'playing'; room.round += 1; room.answerVotes = new Map();
     room.letter = LETTERS[randomBytes(1)[0] % LETTERS.length];
     room.timeLeft = room.settings.duration; room.endsAt = Date.now() + room.settings.duration * 1000; room.results = [];
     for (const p of room.players.values()) { p.answers = Object.fromEntries(CATEGORIES.map(k => [k, ''])); p.submitted = false; }
@@ -114,8 +123,8 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       const duration = Number(payload.settings?.duration), rounds = Number(payload.settings?.rounds);
       const room = {
         code, hostId: playerId, status: 'lobby',
-        settings: { duration: [30, 45, 60, 90, 120].includes(duration) ? duration : 60, rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3 },
-        letter: '', round: 0, timeLeft: 0, endsAt: null, players: new Map(), results: [], timer: null
+        settings: { duration: [30, 45, 60, 90, 120].includes(duration) ? duration : 60, rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: VALID_MODES.includes(payload.settings?.mode) ? payload.settings.mode : 'classic', language: payload.settings?.language === 'te' ? 'te' : 'en' },
+        letter: '', round: 0, timeLeft: 0, endsAt: null, players: new Map(), results: [], timer: null, bonusCategory: null, answerVotes: new Map()
       };
       const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: true, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, connected: true, expiryTimer: null };
       room.players.set(player.id, player); rooms.set(code, room); socket.join(code);
@@ -163,7 +172,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       if (room.status !== 'lobby') return ack(cb, { ok: false, error: 'The game has already started.' });
       if (room.players.size < 2) return ack(cb, { ok: false, error: 'Invite at least one friend to start.' });
       if ([...room.players.values()].some(p => !p.ready || !p.connected)) return ack(cb, { ok: false, error: 'Everyone needs to be connected and ready first.' });
-      room.players.forEach(p => p.score = 0); startRound(room); ack(cb, { ok: true });
+      room.players.forEach(p => p.score = 0); room.gameId = randomUUID(); startRound(room); ack(cb, { ok: true });
     });
 
     socket.on('answers:update', (payload = {}, cb) => {
@@ -186,6 +195,20 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       ack(cb, { ok: true });
     });
 
+    socket.on('answer:challenge', (payload = {}, cb) => {
+      const room = findRoom(payload), player = getPlayer(room, socket);
+      const category = CATEGORIES.includes(payload.category) ? payload.category : null;
+      const targetId = String(payload.targetId || '');
+      if (!room || room.status !== 'results' || !player || !category || !room.results.some(r => r.id === targetId)) return ack(cb, { ok: false, error: 'That answer cannot be challenged now.' });
+      if (targetId === player.id) return ack(cb, { ok: false, error: 'You cannot challenge your own answer.' });
+      const key = `${room.round}:${targetId}:${category}`;
+      const votes = room.answerVotes.get(key) || new Set();
+      if (votes.has(player.id)) return ack(cb, { ok: false, error: 'You already flagged this answer.' });
+      votes.add(player.id); room.answerVotes.set(key, votes);
+      io.to(room.code).emit('answer:challenge:update', { targetId, category, votes: votes.size });
+      ack(cb, { ok: true, votes: votes.size, note: 'Flag recorded for host review. Scores are unchanged.' });
+    });
+
     socket.on('game:next', (payload = {}, cb) => {
       const room = findRoom(payload), player = getPlayer(room, socket);
       if (!room || !player || room.hostId !== player.id || room.status !== 'results') return ack(cb, { ok: false, error: 'Only the host can continue.' });
@@ -197,7 +220,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       const room = findRoom(payload), player = getPlayer(room, socket);
       if (!room || !player || room.hostId !== player.id || room.status !== 'finished') return ack(cb, { ok: false, error: 'Only the host can start a rematch.' });
       room.players.forEach(p => { p.score = 0; p.ready = p.id === room.hostId; p.answers = Object.fromEntries(CATEGORIES.map(k => [k, ''])); p.submitted = false; });
-      room.round = 0; room.status = 'lobby'; room.letter = ''; room.results = []; room.timeLeft = 0; room.endsAt = null; emitRoom(room); ack(cb, { ok: true });
+      room.round = 0; room.status = 'lobby'; room.letter = ''; room.results = []; room.timeLeft = 0; room.endsAt = null; room.bonusCategory = null; room.gameId = null; emitRoom(room); ack(cb, { ok: true });
     });
 
     socket.on('disconnect', () => {

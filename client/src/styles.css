@@ -310,3 +310,16 @@ body{background:var(--page);color:var(--text-main)}
 :root[data-theme="midnight"] .score-panel h2,:root[data-theme="midnight"] .answers-panel h2,:root[data-theme="midnight"] .final-leaderboard h2,:root[data-theme="midnight"] .score-person strong,:root[data-theme="midnight"] .reveal-answer strong,:root[data-theme="midnight"] .award-card strong,:root[data-theme="midnight"] .lore-entry strong{color:var(--text-main)}
 :root[data-theme="midnight"] .score-person span,:root[data-theme="midnight"] .answers-panel>p,:root[data-theme="midnight"] .reveal-answer span,:root[data-theme="midnight"] .lore-entry p,:root[data-theme="midnight"] .lore-empty{color:var(--text-muted)}
 .tile-symbol{font-family:system-ui,sans-serif;font-size:27px!important;letter-spacing:0!important}
+
+
+/* NaPiTA clarity pass: keep typed text readable in every theme. */
+.text-input,.code-input-wrap input,.select-wrap select,.answer-card input{color:var(--field-text,var(--text-main,#f1efff));caret-color:var(--accent,#a99aff)}
+.text-input::placeholder,.code-input-wrap input::placeholder,.answer-card input::placeholder{color:var(--text-muted,#aaa7c0);opacity:1}
+.answer-card input{width:100%;min-width:0;background:var(--field-bg,#151722);color:var(--field-text,#f1efff);border:1px solid var(--border-main,#303244);padding:10px 8px;border-radius:9px;font-size:15px;font-weight:650;line-height:1.4}
+.answer-card input:focus{outline:2px solid var(--accent,#a99aff);outline-offset:1px}
+.text-input{background:var(--field-bg,#151722);color:var(--field-text,#f1efff);border-color:var(--border-main,#303244)}
+.text-input:focus{background:var(--field-bg,#151722)}
+.chaos-hint{margin:12px auto 0;max-width:620px;padding:10px 13px;border:1px dashed var(--accent,#a99aff);border-radius:10px;color:var(--text-muted,#b0aec4);font-size:12px;text-align:center}
+.category-doodle{position:absolute;z-index:-1;pointer-events:none;opacity:.14;font-size:clamp(30px,4vw,52px);filter:grayscale(.15);transform:rotate(-12deg)}
+.doodle-book{left:-12%;top:12%}.doodle-map{left:-8%;bottom:16%;transform:rotate(10deg)}.doodle-paw{right:-11%;top:19%;transform:rotate(12deg)}.doodle-pencil{right:-7%;bottom:18%;transform:rotate(-24deg)}
+@media(max-width:760px){.category-doodle{opacity:.09}.doodle-book{left:0;top:3%}.doodle-map{left:0;bottom:3%}.doodle-paw{right:0;top:5%}.doodle-pencil{right:0;bottom:4%}}

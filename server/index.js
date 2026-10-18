@@ -12,11 +12,53 @@ const VALID_MODES = ['classic', 'chaos'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const RECONNECT_GRACE_MS = 60_000;
 const MAX_PLAYERS = 12;
+const VALIDATION_CACHE = new Map();
+const VALIDATION_TIMEOUT_MS = 1800;
 
 const cleanName = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 18) || 'Player';
 const cleanAnswer = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, ' ').slice(0, 60);
 const normalizeAnswer = value => cleanAnswer(value).normalize('NFKC').toLocaleLowerCase('en-US');
 const validForLetter = (answer, letter) => /^[a-z]/i.test(answer) && answer[0].toLocaleUpperCase('en-US') === letter;
+
+const CATEGORY_HINTS = {
+  name: /person|human|given name|family name|surname|first name|fictional character/i,
+  place: /place|city|town|village|country|region|river|mountain|island|building|location|settlement|geographic|lake|capital/i,
+  animal: /animal|species|mammal|bird|fish|reptile|amphibian|insect|organism|taxon|breed/i,
+  thing: /.*/
+};
+async function validateRealAnswer(category, answer) {
+  const normalized = normalizeAnswer(answer);
+  if (!normalized) return false;
+  const cacheKey = `${category}:${normalized}`;
+  if (VALIDATION_CACHE.has(cacheKey)) return VALIDATION_CACHE.get(cacheKey);
+  const validation = (async () => {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), VALIDATION_TIMEOUT_MS);
+      const url = new URL('https://www.wikidata.org/w/api.php');
+      url.search = new URLSearchParams({ action:'wbsearchentities', search:answer, language:'en', uselang:'en', type:'item', limit:'5', format:'json', origin:'*' }).toString();
+      const response = await fetch(url, { signal:controller.signal, headers:{ 'User-Agent':'NaPiTA/1.0 (word-game answer validation)' } });
+      clearTimeout(timer);
+      if (!response.ok) return false;
+      const data = await response.json();
+      const exact = (data.search || []).find(item => {
+        const labels = [item.label, ...(item.aliases || [])].filter(Boolean).map(normalizeAnswer);
+        if (!labels.includes(normalized)) return false;
+        if (category === 'thing') return true;
+        return CATEGORY_HINTS[category].test(`${item.description || ''} ${item.label || ''}`);
+      });
+      return Boolean(exact);
+    } catch {
+      // If the validation service is unavailable, fail closed so unverified answers cannot score.
+      return false;
+    }
+  })();
+  VALIDATION_CACHE.set(cacheKey, validation);
+  const result = await validation;
+  VALIDATION_CACHE.set(cacheKey, result);
+  return result;
+}
+
 const makeCode = rooms => {
   let code;
   do { code = Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[randomBytes(1)[0] % 32]).join(''); }
@@ -59,22 +101,30 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
     if (room.status === 'playing' && [...room.players.values()].every(p => p.submitted)) finishRound(room);
     else emitRoom(room);
   }
-  function finishRound(room) {
+  async function finishRound(room) {
     if (room.status !== 'playing') return;
+    room.status = 'validating';
     if (room.timer) clearInterval(room.timer);
     room.timer = null; room.endsAt = null; room.timeLeft = 0;
     const players = [...room.players.values()];
+    emitRoom(room);
     const points = new Map(players.map(p => [p.id, 0]));
     const categoryPoints = new Map(players.map(p => [p.id, Object.fromEntries(CATEGORIES.map(k => [k, 0]))]));
+    const validity = new Map();
+    await Promise.all(players.flatMap(player => CATEGORIES.map(async key => {
+      const answer = normalizeAnswer(player.answers[key]);
+      const valid = Boolean(answer && validForLetter(answer, room.letter) && await validateRealAnswer(key, player.answers[key]));
+      validity.set(`${player.id}:${key}`, valid);
+    })));
     for (const key of CATEGORIES) {
       const counts = new Map();
       for (const player of players) {
         const answer = normalizeAnswer(player.answers[key]);
-        if (answer && validForLetter(answer, room.letter)) counts.set(answer, (counts.get(answer) || 0) + 1);
+        if (validity.get(`${player.id}:${key}`)) counts.set(answer, (counts.get(answer) || 0) + 1);
       }
       for (const player of players) {
         const answer = normalizeAnswer(player.answers[key]);
-        if (!answer || !validForLetter(answer, room.letter)) continue;
+        if (!validity.get(`${player.id}:${key}`)) continue;
         const earned = counts.get(answer) === 1 ? 10 : 5;
         points.set(player.id, points.get(player.id) + earned);
         categoryPoints.get(player.id)[key] = earned;
@@ -123,7 +173,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       const duration = Number(payload.settings?.duration), rounds = Number(payload.settings?.rounds);
       const room = {
         code, hostId: playerId, status: 'lobby',
-        settings: { duration: [30, 45, 60, 90, 120].includes(duration) ? duration : 60, rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: VALID_MODES.includes(payload.settings?.mode) ? payload.settings.mode : 'classic', language: payload.settings?.language === 'te' ? 'te' : 'en' },
+        settings: { duration: [30, 45, 60, 90, 120].includes(duration) ? duration : 60, rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: VALID_MODES.includes(payload.settings?.mode) ? payload.settings.mode : 'classic' },
         letter: '', round: 0, timeLeft: 0, endsAt: null, players: new Map(), results: [], timer: null, bonusCategory: null, answerVotes: new Map()
       };
       const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: true, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, connected: true, expiryTimer: null };

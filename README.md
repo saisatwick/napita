@@ -25,11 +25,11 @@ Then open http://localhost:3000.
 - Random session tokens let a player reclaim their seat after a refresh or brief connection drop. Seats are reserved for 60 seconds.
 - Socket.IO reconnects automatically; the client restores the room, current phase and saved answers from the server snapshot.
 - The server owns the round deadline (`endsAt`) and computes remaining time from its clock. Clients cannot extend the timer by changing their local clock.
-- The server sanitizes player names and answers, limits answer length, rejects edits after submission/time-out, and awards zero for answers that do not begin with the round letter.
+- The server sanitizes player names and answers, limits answer length, rejects edits after submission/time-out, and checks that each answer starts with the round letter and matches its category using exact Wikidata labels/aliases plus category-specific description rules. Invalid or unverified answers score zero. The results screen labels accepted and rejected answers.
 - Answers are normalized case-insensitively for duplicate detection. Valid unique answers earn 10 points; matching answers earn 5 points each.
 - The host can advance rounds, finish the game and reset scores for a rematch.
 
-Automatic scoring checks the starting letter and duplicate answers. It does **not** verify whether an answer is factually correct for its category (for example, whether a word is actually an animal); that would require a curated dictionary or moderation step.
+Category validation uses the public Wikidata search API. It is stricter than letter-only scoring, but it is not perfect: some rare or ambiguous answers may be rejected if Wikidata lacks a clear English description. If Wikidata is unreachable, unverified answers score zero. Test examples such as “Monkey” under Name and “Noah” under Animal; both should be rejected unless Wikidata returns an exact matching item with a category-compatible description.
 
 ## Tests
 ```bash

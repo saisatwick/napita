@@ -20,37 +20,58 @@ const cleanAnswer = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/
 const normalizeAnswer = value => cleanAnswer(value).normalize('NFKC').toLocaleLowerCase('en-US');
 const validForLetter = (answer, letter) => /^[a-z]/i.test(answer) && answer[0].toLocaleUpperCase('en-US') === letter;
 
-const CATEGORY_HINTS = {
-  name: /person|human|given name|family name|surname|first name|fictional character/i,
-  place: /place|city|town|village|country|region|river|mountain|island|building|location|settlement|geographic|lake|capital/i,
-  animal: /animal|species|mammal|bird|fish|reptile|amphibian|insect|organism|taxon|breed/i,
-  thing: /.*/
+const CATEGORY_RULES = {
+  name: {
+    include: /given name|first name|middle name|surname|family name|personal name|human|person|fictional character|mythological figure|biblical (?:figure|patriarch|prophet)|actor|actress|singer|musician|writer|author|politician|athlete|scientist|artist|explorer|monarch|king|queen|president|inventor|philosopher|historical figure/i,
+    exclude: /species of|genus of|family of|order of|class of|animal|mammal|bird|fish|reptile|amphibian|insect|city|town|village|country|river|mountain|island|lake|building|geographic location/i
+  },
+  place: {
+    include: /place|city|town|village|country|state|province|region|continent|river|mountain|island|lake|ocean|sea|capital|settlement|geographic|geographical|location|national park|desert|valley|district|municipality|airport|building|street/i,
+    exclude: /given name|surname|species of|genus of|animal|mammal|bird|fish|reptile|amphibian|insect|person|actor|singer|politician/i
+  },
+  animal: {
+    include: /animal|species|mammal|bird|fish|reptile|amphibian|insect|arachnid|crustacean|mollusc|mollusk|organism|taxon|breed of|genus of|family of animals|butterfly|beetle|snake|lizard|frog|turtle|whale|dolphin|shark|dog breed|cat breed/i,
+    exclude: /fictional character|film|movie|song|album|video game|person|given name|city|country|river|mountain/i
+  },
+  thing: {
+    include: /object|artifact|artefact|tool|device|machine|instrument|equipment|vehicle|food|fruit|vegetable|beverage|drink|material|substance|product|utensil|appliance|furniture|clothing|garment|toy|book|musical instrument|electronic component|computer hardware|weapon|container|plant|flower|tree|chemical compound|mineral|textile|fabric|currency|coin|medication|medicine|sporting equipment/i,
+    exclude: /given name|surname|person|human|politician|actor|singer|athlete|writer|city|town|village|country|river|mountain|island|lake|geographic location|species of|genus of|animal|mammal|bird|fish|reptile|amphibian|insect|fictional character/i
+  }
 };
+function belongsToCategory(category, item) {
+  const rule = CATEGORY_RULES[category];
+  if (!rule || !item) return false;
+  const description = String(item.description || '');
+  const label = String(item.label || '');
+  const combined = `${description} ${label}`;
+  if (rule.exclude.test(combined)) return false;
+  return rule.include.test(combined);
+}
 async function validateRealAnswer(category, answer) {
   const normalized = normalizeAnswer(answer);
-  if (!normalized) return false;
+  if (!normalized || !CATEGORY_RULES[category]) return false;
   const cacheKey = `${category}:${normalized}`;
   if (VALIDATION_CACHE.has(cacheKey)) return VALIDATION_CACHE.get(cacheKey);
   const validation = (async () => {
+    let timer;
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), VALIDATION_TIMEOUT_MS);
+      timer = setTimeout(() => controller.abort(), VALIDATION_TIMEOUT_MS);
       const url = new URL('https://www.wikidata.org/w/api.php');
-      url.search = new URLSearchParams({ action:'wbsearchentities', search:answer, language:'en', uselang:'en', type:'item', limit:'5', format:'json', origin:'*' }).toString();
+      url.search = new URLSearchParams({ action:'wbsearchentities', search:answer, language:'en', uselang:'en', type:'item', limit:'10', format:'json', origin:'*' }).toString();
       const response = await fetch(url, { signal:controller.signal, headers:{ 'User-Agent':'NaPiTA/1.0 (word-game answer validation)' } });
-      clearTimeout(timer);
       if (!response.ok) return false;
       const data = await response.json();
-      const exact = (data.search || []).find(item => {
+      // Only exact labels or aliases count; fuzzy search results cannot earn points.
+      return (data.search || []).some(item => {
         const labels = [item.label, ...(item.aliases || [])].filter(Boolean).map(normalizeAnswer);
-        if (!labels.includes(normalized)) return false;
-        if (category === 'thing') return true;
-        return CATEGORY_HINTS[category].test(`${item.description || ''} ${item.label || ''}`);
+        return labels.includes(normalized) && belongsToCategory(category, item);
       });
-      return Boolean(exact);
     } catch {
-      // If the validation service is unavailable, fail closed so unverified answers cannot score.
+      // Fail closed: if Wikidata is unreachable, unverified answers score zero.
       return false;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   })();
   VALIDATION_CACHE.set(cacheKey, validation);

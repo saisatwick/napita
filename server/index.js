@@ -13,7 +13,7 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const RECONNECT_GRACE_MS = 60_000;
 const MAX_PLAYERS = 12;
 const VALIDATION_CACHE = new Map();
-const VALIDATION_TIMEOUT_MS = 1800;
+const VALIDATION_TIMEOUT_MS = 6000;
 
 const cleanName = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 18) || 'Player';
 const cleanAnswer = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -47,9 +47,21 @@ function belongsToCategory(category, item) {
   if (rule.exclude.test(combined)) return false;
   return rule.include.test(combined);
 }
+const COMMON_VALID_ANSWERS = {
+  name: new Set('aarav aaron abby abdul aditi aditya adnan aishwarya aisha ajay akash akhil akshara aman amar amanda amit amiya amol ananya anil anjali ankita ankit arav arjun arnav arya asha ashwini atharv avani ayesha bhavana bhavesh charan chetan deepa deepak dev dhruv diya divya farhan fatima ganesh gautam geeta gopal harini harsh harsha hema himanshu hitesh ishita isha jagan jai janvi jaya jeevan jhanvi jhansi john joseph jyothi kalyan karthik kavitha kavya keerthi kiran kishore krishna lakshmi lalitha lavanya madhav madhavi mahesh manoj meena megha mohan mukesh naveen navya neha nikhil nisha nitin pooja pradeep prakash prasad praveen priya rahul raj raja rakesh ram ramesh ravi rekha rohan rohit sai sakshi sanjay sandeep sanjana santosh sarah shiva shreya shruti sneha srinivas sriram suresh swathi tanvi teja tejaswini uma varun venkat venkatesh vijay vikas vikram vinay yash zara'.split(' ')),
+  place: new Set('afghanistan africa america amsterdam andhra-pradesh argentina australia bangalore beijing brazil canada chennai china delhi dubai egypt england europe france germany hyderabad india indonesia italy japan kashmir kerala london mumbai nepal new-york norway paris pune qatar rome singapore spain tokyo usa vijayawada'.split(' ')),
+  animal: new Set('ant anteater alpaca alligator bear bee buffalo butterfly camel cat cheetah chicken cow crab crocodile deer dog dolphin donkey duck eagle elephant fox frog giraffe goat goose hamster hawk horse jaguar kangaroo koala leopard lion lizard monkey mosquito mouse owl ox panda parrot peacock penguin pig pigeon polar-bear rabbit rat rhinoceros shark sheep snake sparrow spider squirrel tiger turkey turtle whale wolf yak zebra quail'.split(' ')),
+  thing: new Set('apple bag ball banana book bottle box brush camera candle chair clock cup desk door drum fork phone glass guitar hat key laptop map mirror notebook pen pencil plate radio ring ruler scissors shoe spoon table television tent toy train umbrella watch window quilt'.split(' '))
+};
+function isCommonValidAnswer(category, normalized) {
+  const compact = normalized.replace(/[^a-z0-9]/g, '');
+  return Boolean(COMMON_VALID_ANSWERS[category]?.has(normalized) || [...(COMMON_VALID_ANSWERS[category] || [])].some(value => value.replace(/[^a-z0-9]/g, '') === compact));
+}
 async function validateRealAnswer(category, answer) {
   const normalized = normalizeAnswer(answer);
   if (!normalized || !CATEGORY_RULES[category]) return false;
+  // A curated offline dictionary keeps common, unambiguous answers working when Wikidata is slow or unavailable.
+  if (isCommonValidAnswer(category, normalized)) return true;
   const cacheKey = `${category}:${normalized}`;
   if (VALIDATION_CACHE.has(cacheKey)) return VALIDATION_CACHE.get(cacheKey);
   const validation = (async () => {
@@ -68,8 +80,8 @@ async function validateRealAnswer(category, answer) {
         return labels.includes(normalized) && belongsToCategory(category, item);
       });
     } catch {
-      // Fail closed: if Wikidata is unreachable, unverified answers score zero.
-      return false;
+      // Keep the game reliable when Wikidata is unreachable; only curated answers are accepted offline.
+      return isCommonValidAnswer(category, normalized);
     } finally {
       if (timer) clearTimeout(timer);
     }

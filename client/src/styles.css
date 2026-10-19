@@ -207,6 +207,25 @@ button:disabled{cursor:not-allowed;opacity:.65}
 :root[data-theme="matcha"] .category-ribbon-icon,:root[data-theme="sunset"] .category-ribbon-icon{filter:brightness(1.04) drop-shadow(0 2px 4px #0002)}
 :root[data-theme="matcha"] .footer,:root[data-theme="sunset"] .footer,:root[data-theme="matcha"] .footer-brand,:root[data-theme="sunset"] .footer-brand{color:var(--np-muted)}
 
+/* Tiny low-opacity outline icons and glyphs in the side margins of the landing hero. */
+.side-ornaments{position:absolute;inset:-12px -190px -8px;z-index:-1;pointer-events:none;overflow:hidden;color:var(--np-accent)}
+.side-ornament{position:absolute;display:grid;place-items:center;line-height:1;font-weight:400;user-select:none}
+.side-ornament svg{width:100%;height:100%;stroke-width:1.35}
+.side-ornament.outline{width:22px;height:22px;opacity:.22}
+.side-ornament.emoji{font-size:23px;opacity:.19}
+.ornament-book{left:8%;top:30%;transform:rotate(-10deg)}
+.ornament-star{left:17%;top:13%;font-size:25px!important;color:#c7b9ff}
+.ornament-map{right:8%;top:22%;transform:rotate(8deg);color:#f0b99d}
+.ornament-spark{right:17%;top:42%;color:#e9b98f}
+.ornament-paw{left:10%;bottom:14%;color:#91d4b5;transform:rotate(-12deg)}
+.ornament-pencil{right:10%;bottom:16%;color:#e7c76f;transform:rotate(-15deg)}
+.ornament-note{right:22%;bottom:8%;width:18px!important;height:18px!important;color:#b6a6ff;transform:rotate(12deg)}
+.ornament-leaf{left:23%;bottom:30%;font-size:18px!important;color:#8bc8aa;transform:rotate(-12deg)}
+:root[data-theme="midnight"] .side-ornament.outline{opacity:.24}:root[data-theme="midnight"] .side-ornament.emoji{opacity:.2}
+:root[data-theme="classic"] .side-ornament{opacity:.15}:root[data-theme="matcha"] .side-ornament{opacity:.22}:root[data-theme="sunset"] .side-ornament{opacity:.2}
+@media(max-width:1200px){.side-ornaments{inset:-8px -100px 0}.side-ornament.outline{width:18px;height:18px}.side-ornament.emoji{font-size:18px}}
+@media(max-width:760px){.side-ornaments{inset:0 -4px 0}.side-ornament{opacity:.11!important}.side-ornament.outline{width:15px;height:15px}.side-ornament.emoji{font-size:15px!important}.ornament-book{left:3%;top:24%}.ornament-star{left:8%;top:8%}.ornament-map{right:3%;top:22%}.ornament-spark{right:7%;top:43%}.ornament-paw{left:3%;bottom:12%}.ornament-pencil{right:3%;bottom:13%}.ornament-note{right:8%;bottom:6%}.ornament-leaf{left:8%;bottom:29%}}
+
 /* Ambient stationery doodles: decorative, low-contrast and never behind controls. */
 .hero{isolation:isolate}
 .category-doodles{position:absolute;inset:-25px -190px -8px;z-index:-1;pointer-events:none;overflow:visible}

@@ -58,7 +58,7 @@ test('private rooms, reconnect, validation, scoring and rematch', async t => {
   const hostResult = results.results.find(r => r.id === created.playerId);
   assert.equal(hostResult.categoryPoints.name, 5, 'case-insensitive duplicate answers earn matching points');
   assert.equal(hostResult.categoryPoints.thing, 0, 'answers starting with the wrong letter score zero');
-  assert.equal(hostResult.roundPoints, 25);
+  assert.equal(hostResult.roundPoints, 5);
 
   assert.equal((await emitAck(host, 'game:next', { code: created.room.code })).ok, true);
   const finished = waitFor(host, 'room:update', room => room.status === 'finished');

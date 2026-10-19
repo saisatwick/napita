@@ -8,90 +8,21 @@ import { randomBytes, randomUUID } from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATEGORIES = ['name', 'place', 'animal', 'thing'];
-const VALID_MODES = ['classic', 'chaos'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const RECONNECT_GRACE_MS = 60_000;
 const MAX_PLAYERS = 12;
-const VALIDATION_CACHE = new Map();
-const VALIDATION_TIMEOUT_MS = 6000;
+const COMMON_ANSWERS = {
+  name: new Set('aarav aarohi abhi abhay aditi aditya ajay akash akhil akshara akshay amara amit amrita ananya anil anjali ananya arjun arnav arun arya ashish asha ashok avinash bhanu bharat bhavana bhavya chaitanya charan chetan deepa deepak deepika dev dhruv diya divya gautam geetha gita gopal harini hari harsha hema indira ishita jagan jai janaki jasmin jay jhansi jiya kalyan kalyani karthik kavya keerthi kiran kishore krishna lakshmi lavanya madhav madhavi mahesh manoj megha meera mihir mohan nagesh nakul nandini naveen navya neha nikhil nikita nisha nithin pooja prasad praveen priya rahul raj raja rakesh ram rama ravi rekha rohan rohit sai sakshi sanjay sandeep sanjana sarah satya shiva shreya siddharth sneha srinivas sriram sushma swathi teja uma varun ved vikas vijay vikram vishal yash'.split(' ')),
+  place: new Set('agra ahmedabad amaravati amritsar anakapalle andhra araku aurangabad australia bangalore bengaluru bhopal bhubaneswar chennai chicago delhi dubai hyderabad india indore jaipur jammu jamnagar jhansi jodhpur kanpur kashmir kerala kolkata london lucknow madurai mumbai mysore nagpur nellore newyork ooty paris pune rajahmundry rajasthan surat tirupati vijayawada vizag warangal washington'.split(' ')),
+  animal: new Set('ant antelope bear bee buffalo butterfly camel cat cheetah chicken cow crocodile deer dog dolphin donkey dove duck eagle elephant fish flamingo fox frog giraffe goat goose gorilla hawk hen hippopotamus horse hyena jaguar jellyfish kangaroo koala leopard lion lizard llama lobster monkey mosquito mouse octopus ostrich otter owl ox panda parrot peacock penguin pig pigeon platypus polar bear quail rabbit rat raven rhinoceros salmon shark sheep snake sparrow spider squirrel tiger tortoise turtle vulture whale wolf yak zebra'.split(' ')),
+  thing: new Set('airplane album apple apron arrow bag ball balloon banana battery bed belt bicycle book bottle bowl box bracelet bread broom brush bucket camera candle car card carpet chair charger clock clothes comb computer cup curtain cushion desk dictionary door dress drum earphones envelope fan flag flower fork fridge game glass glue guitar hammer hat headphones helmet key keyboard knife lamp laptop map mattress mirror monitor mouse mug notebook paper pen pencil phone pillow plate pot purse radio ruler scissors screen shoe soap sofa spoon spoon steel spoon suitcase table tablet television tent ticket towel toy train tree umbrella vase wallet watch water bottle window'.split(' '))
+};
+const validCategory = (answer, category) => { const normalized = normalizeAnswer(answer).replace(/[^a-z0-9 ]/g, '').trim(); if (!normalized) return false; if (COMMON_ANSWERS[category]?.has(normalized)) return true; if (category === 'name') return /^[a-z][a-z .'-]{1,30}$/i.test(answer) && !COMMON_ANSWERS.animal.has(normalized) && !COMMON_ANSWERS.thing.has(normalized); if (category === 'place') return /^[a-z][a-z .'-]{1,40}$/i.test(answer) && (/(city|town|village|river|mount|lake|street|park|state|country|beach|island)/i.test(answer) || COMMON_ANSWERS.place.has(normalized)); return false; };
 
 const cleanName = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 18) || 'Player';
 const cleanAnswer = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, ' ').slice(0, 60);
 const normalizeAnswer = value => cleanAnswer(value).normalize('NFKC').toLocaleLowerCase('en-US');
 const validForLetter = (answer, letter) => /^[a-z]/i.test(answer) && answer[0].toLocaleUpperCase('en-US') === letter;
-
-const CATEGORY_RULES = {
-  name: {
-    include: /given name|first name|middle name|surname|family name|personal name|human|person|fictional character|mythological figure|biblical (?:figure|patriarch|prophet)|actor|actress|singer|musician|writer|author|politician|athlete|scientist|artist|explorer|monarch|king|queen|president|inventor|philosopher|historical figure/i,
-    exclude: /species of|genus of|family of|order of|class of|animal|mammal|bird|fish|reptile|amphibian|insect|city|town|village|country|river|mountain|island|lake|building|geographic location/i
-  },
-  place: {
-    include: /place|city|town|village|country|state|province|region|continent|river|mountain|island|lake|ocean|sea|capital|settlement|geographic|geographical|location|national park|desert|valley|district|municipality|airport|building|street/i,
-    exclude: /given name|surname|species of|genus of|animal|mammal|bird|fish|reptile|amphibian|insect|person|actor|singer|politician/i
-  },
-  animal: {
-    include: /animal|species|mammal|bird|fish|reptile|amphibian|insect|arachnid|crustacean|mollusc|mollusk|organism|taxon|breed of|genus of|family of animals|butterfly|beetle|snake|lizard|frog|turtle|whale|dolphin|shark|dog breed|cat breed/i,
-    exclude: /fictional character|film|movie|song|album|video game|person|given name|city|country|river|mountain/i
-  },
-  thing: {
-    include: /object|artifact|artefact|tool|device|machine|instrument|equipment|vehicle|food|fruit|vegetable|beverage|drink|material|substance|product|utensil|appliance|furniture|clothing|garment|toy|book|musical instrument|electronic component|computer hardware|weapon|container|plant|flower|tree|chemical compound|mineral|textile|fabric|currency|coin|medication|medicine|sporting equipment/i,
-    exclude: /given name|surname|person|human|politician|actor|singer|athlete|writer|city|town|village|country|river|mountain|island|lake|geographic location|species of|genus of|animal|mammal|bird|fish|reptile|amphibian|insect|fictional character/i
-  }
-};
-function belongsToCategory(category, item) {
-  const rule = CATEGORY_RULES[category];
-  if (!rule || !item) return false;
-  const description = String(item.description || '');
-  const label = String(item.label || '');
-  const combined = `${description} ${label}`;
-  if (rule.exclude.test(combined)) return false;
-  return rule.include.test(combined);
-}
-const COMMON_VALID_ANSWERS = {
-  name: new Set('aarav aaron abby abdul aditi aditya adnan aishwarya aisha ajay akash akhil akshara aman amar amanda amit amiya amol ananya anil anjali ankita ankit arav arjun arnav arya asha ashwini atharv avani ayesha bhavana bhavesh charan chetan deepa deepak dev dhruv diya divya farhan fatima ganesh gautam geeta gopal harini harsh harsha hema himanshu hitesh ishita isha jagan jai janvi jaya jeevan jhanvi jhansi jhanvi jhansi jhansi john joseph jyothi kalyan karthik kavitha kavya keerthi kiran kishore krishna lakshmi lalitha lavanya madhav madhavi mahesh manoj meena megha mohan mukesh naveen navya neha nikhil nisha nitin pooja pradeep prakash prasad praveen priya rahul raj raja rakesh ram ramesh ravi rekha rohan rohit sai sakshi sanjay sandeep sanjana santosh sarah shiva shreya shruti sneha srinivas sriram suresh swathi tanvi teja tejaswini uma varun venkat venkatesh vijay vikas vikram vinay yash zara'.split(' ')),
-  place: new Set('afghanistan africa america amsterdam andhra-pradesh argentina australia bangalore beijing brazil canada chennai china delhi dubai egypt england europe france germany hyderabad india indonesia italy japan jammu jhansi kashmir kerala london mumbai nepal new-york norway paris pune qatar rome singapore spain tokyo usa vijayawada'.split(' ')),
-  animal: new Set('ant anteater alpaca alligator bear bee buffalo butterfly camel cat cheetah chicken cow crab crocodile deer dog dolphin donkey duck eagle elephant fox frog giraffe goat goose hamster hawk horse jaguar kangaroo koala leopard lion lizard monkey mosquito mouse owl ox panda parrot peacock penguin pig pigeon polar-bear rabbit rat rhinoceros shark sheep snake sparrow spider squirrel tiger turkey turtle whale wolf yak zebra quail'.split(' ')),
-  thing: new Set('apple bag ball banana book bottle box brush camera candle chair clock cup desk door drum fork phone glass guitar hat key laptop map mirror notebook pen pencil plate radio ring ruler scissors shoe spoon table television tent toy train umbrella watch window quilt'.split(' '))
-};
-function isCommonValidAnswer(category, normalized) {
-  const compact = normalized.replace(/[^a-z0-9]/g, '');
-  return Boolean(COMMON_VALID_ANSWERS[category]?.has(normalized) || [...(COMMON_VALID_ANSWERS[category] || [])].some(value => value.replace(/[^a-z0-9]/g, '') === compact));
-}
-async function validateRealAnswer(category, answer) {
-  const normalized = normalizeAnswer(answer);
-  if (!normalized || !CATEGORY_RULES[category]) return false;
-  // A curated offline dictionary keeps common, unambiguous answers working when Wikidata is slow or unavailable.
-  if (isCommonValidAnswer(category, normalized)) return true;
-  const cacheKey = `${category}:${normalized}`;
-  if (VALIDATION_CACHE.has(cacheKey)) return VALIDATION_CACHE.get(cacheKey);
-  const validation = (async () => {
-    let timer;
-    try {
-      const controller = new AbortController();
-      timer = setTimeout(() => controller.abort(), VALIDATION_TIMEOUT_MS);
-      const url = new URL('https://www.wikidata.org/w/api.php');
-      url.search = new URLSearchParams({ action:'wbsearchentities', search:answer, language:'en', uselang:'en', type:'item', limit:'10', format:'json', origin:'*' }).toString();
-      const response = await fetch(url, { signal:controller.signal, headers:{ 'User-Agent':'NaPiTA/1.0 (word-game answer validation)' } });
-      if (!response.ok) return false;
-      const data = await response.json();
-      // Only exact labels or aliases count; fuzzy search results cannot earn points.
-      return (data.search || []).some(item => {
-        const labels = [item.label, ...(item.aliases || [])].filter(Boolean).map(normalizeAnswer);
-        return labels.includes(normalized) && belongsToCategory(category, item);
-      });
-    } catch {
-      // Keep the game reliable when Wikidata is unreachable; only curated answers are accepted offline.
-      return isCommonValidAnswer(category, normalized);
-    } finally {
-      if (timer) clearTimeout(timer);
-    }
-  })();
-  VALIDATION_CACHE.set(cacheKey, validation);
-  const result = await validation;
-  VALIDATION_CACHE.set(cacheKey, result);
-  return result;
-}
-
 const makeCode = rooms => {
   let code;
   do { code = Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[randomBytes(1)[0] % 32]).join(''); }
@@ -113,7 +44,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
   }
   function snapshot(room) {
     return {
-      code: room.code, hostId: room.hostId, status: room.status, settings: room.settings, gameId: room.gameId || null,
+      code: room.code, hostId: room.hostId, status: room.status, settings: room.settings,
       letter: room.letter, round: room.round, timeLeft: timeLeft(room), endsAt: room.endsAt,
       players: [...room.players.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, score: p.score, answers: { ...p.answers }, submitted: p.submitted, connected: p.connected })),
       results: room.results.map(result => ({ ...result, answers: { ...result.answers }, categoryPoints: { ...result.categoryPoints } })), bonusCategory: room.bonusCategory || null
@@ -134,55 +65,43 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
     if (room.status === 'playing' && [...room.players.values()].every(p => p.submitted)) finishRound(room);
     else emitRoom(room);
   }
-  async function finishRound(room) {
+  function finishRound(room) {
     if (room.status !== 'playing') return;
-    room.status = 'validating';
+    const roundEndsAt = room.endsAt;
     if (room.timer) clearInterval(room.timer);
     room.timer = null; room.endsAt = null; room.timeLeft = 0;
     const players = [...room.players.values()];
-    emitRoom(room);
     const points = new Map(players.map(p => [p.id, 0]));
     const categoryPoints = new Map(players.map(p => [p.id, Object.fromEntries(CATEGORIES.map(k => [k, 0]))]));
-    const validity = new Map();
-    await Promise.all(players.flatMap(player => CATEGORIES.map(async key => {
-      const answer = normalizeAnswer(player.answers[key]);
-      const valid = Boolean(answer && validForLetter(answer, room.letter) && await validateRealAnswer(key, player.answers[key]));
-      validity.set(`${player.id}:${key}`, valid);
-    })));
     for (const key of CATEGORIES) {
       const counts = new Map();
       for (const player of players) {
         const answer = normalizeAnswer(player.answers[key]);
-        if (validity.get(`${player.id}:${key}`)) counts.set(answer, (counts.get(answer) || 0) + 1);
+        if (answer && validForLetter(answer, room.letter)) counts.set(answer, (counts.get(answer) || 0) + 1);
       }
       for (const player of players) {
         const answer = normalizeAnswer(player.answers[key]);
-        if (!validity.get(`${player.id}:${key}`)) continue;
-        const earned = counts.get(answer) === 1 ? 10 : 5;
+        if (!answer || !validForLetter(answer, room.letter)) continue;
+        if (!validCategory(answer, key)) continue;
+        let earned = counts.get(answer) === 1 ? 10 : 5;
+        if (room.settings.mode === 'chaos' && room.bonusCategory === key) earned *= 2;
         points.set(player.id, points.get(player.id) + earned);
         categoryPoints.get(player.id)[key] = earned;
       }
     }
-    if (room.settings.mode === 'chaos') {
-      const bonusCategory = CATEGORIES[randomBytes(1)[0] % CATEGORIES.length];
-      for (const player of players) {
-        const base = categoryPoints.get(player.id)[bonusCategory];
-        if (base > 0) { points.set(player.id, points.get(player.id) + base); categoryPoints.get(player.id)[bonusCategory] = base * 2; }
-      }
-      room.bonusCategory = bonusCategory;
-    } else room.bonusCategory = null;
     for (const player of players) player.score += points.get(player.id);
-    room.results = players.map(p => ({ id: p.id, name: p.name, answers: { ...p.answers }, categoryPoints: categoryPoints.get(p.id), roundPoints: points.get(p.id), totalScore: p.score }))
+    room.results = players.map(p => ({ id: p.id, name: p.name, answers: { ...p.answers }, categoryPoints: categoryPoints.get(p.id), roundPoints: points.get(p.id), totalScore: p.score, clutch: Boolean(p.submittedAt && roundEndsAt && (roundEndsAt - p.submittedAt) <= 5000 && (roundEndsAt - p.submittedAt) >= 0) }))
       .sort((a, b) => b.totalScore - a.totalScore || a.name.localeCompare(b.name));
     room.status = 'results';
     emitRoom(room);
   }
   function startRound(room) {
     if (room.timer) clearInterval(room.timer);
-    room.status = 'playing'; room.round += 1; room.answerVotes = new Map();
-    room.letter = LETTERS[randomBytes(1)[0] % LETTERS.length];
+    room.status = 'playing'; room.round += 1;
+    room.bonusCategory = room.settings.mode === 'chaos' ? CATEGORIES[randomBytes(1)[0] % CATEGORIES.length] : null;
+    room.letter = room.settings.fixedLetter || LETTERS[randomBytes(1)[0] % LETTERS.length];
     room.timeLeft = room.settings.duration; room.endsAt = Date.now() + room.settings.duration * 1000; room.results = [];
-    for (const p of room.players.values()) { p.answers = Object.fromEntries(CATEGORIES.map(k => [k, ''])); p.submitted = false; }
+    for (const p of room.players.values()) { p.answers = Object.fromEntries(CATEGORIES.map(k => [k, ''])); p.submitted = false; p.submittedAt = null; }
     emitRoom(room);
     let lastSent = room.settings.duration;
     room.timer = setInterval(() => {
@@ -206,10 +125,10 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       const duration = Number(payload.settings?.duration), rounds = Number(payload.settings?.rounds);
       const room = {
         code, hostId: playerId, status: 'lobby',
-        settings: { duration: [30, 45, 60, 90, 120].includes(duration) ? duration : 60, rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: VALID_MODES.includes(payload.settings?.mode) ? payload.settings.mode : 'classic' },
-        letter: '', round: 0, timeLeft: 0, endsAt: null, players: new Map(), results: [], timer: null, bonusCategory: null, answerVotes: new Map()
+        settings: { duration: payload.settings?.mode === 'speed' ? 30 : ([30, 45, 60, 90, 120].includes(duration) ? duration : 60), rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: ['classic', 'chaos', 'speed'].includes(payload.settings?.mode) ? payload.settings.mode : 'classic', fixedLetter: /^[A-Z]$/.test(String(payload.settings?.fixedLetter || '').toUpperCase()) ? String(payload.settings.fixedLetter).toUpperCase() : null },
+        letter: '', round: 0, timeLeft: 0, endsAt: null, players: new Map(), results: [], timer: null
       };
-      const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: true, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, connected: true, expiryTimer: null };
+      const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: true, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, submittedAt: null, connected: true, expiryTimer: null };
       room.players.set(player.id, player); rooms.set(code, room); socket.join(code);
       ack(cb, { ok: true, room: snapshot(room), playerId, token }); emitRoom(room);
     });
@@ -220,7 +139,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       if (room.status !== 'lobby') return ack(cb, { ok: false, error: 'This game has already started.' });
       if (room.players.size >= MAX_PLAYERS) return ack(cb, { ok: false, error: `This room is full (${MAX_PLAYERS} players max).` });
       const playerId = randomUUID(), token = randomBytes(24).toString('hex');
-      const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: false, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, connected: true, expiryTimer: null };
+      const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: false, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, submittedAt: null, connected: true, expiryTimer: null };
       room.players.set(player.id, player); socket.join(room.code);
       ack(cb, { ok: true, room: snapshot(room), playerId, token }); emitRoom(room);
     });
@@ -255,7 +174,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       if (room.status !== 'lobby') return ack(cb, { ok: false, error: 'The game has already started.' });
       if (room.players.size < 2) return ack(cb, { ok: false, error: 'Invite at least one friend to start.' });
       if ([...room.players.values()].some(p => !p.ready || !p.connected)) return ack(cb, { ok: false, error: 'Everyone needs to be connected and ready first.' });
-      room.players.forEach(p => p.score = 0); room.gameId = randomUUID(); startRound(room); ack(cb, { ok: true });
+      room.players.forEach(p => p.score = 0); startRound(room); ack(cb, { ok: true });
     });
 
     socket.on('answers:update', (payload = {}, cb) => {
@@ -272,24 +191,10 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       if (timeLeft(room) <= 0) { finishRound(room); return ack(cb, { ok: false, error: 'Time is up.' }); }
       if (player.submitted) return ack(cb, { ok: true, alreadySubmitted: true });
       if (payload.answers) player.answers = Object.fromEntries(CATEGORIES.map(k => [k, cleanAnswer(payload.answers[k])]));
-      player.submitted = true;
+      player.submitted = true; player.submittedAt = Date.now();
       io.to(room.code).emit('player:progress', { id: player.id, submitted: true });
       if ([...room.players.values()].every(p => p.submitted)) finishRound(room); else emitRoom(room);
       ack(cb, { ok: true });
-    });
-
-    socket.on('answer:challenge', (payload = {}, cb) => {
-      const room = findRoom(payload), player = getPlayer(room, socket);
-      const category = CATEGORIES.includes(payload.category) ? payload.category : null;
-      const targetId = String(payload.targetId || '');
-      if (!room || room.status !== 'results' || !player || !category || !room.results.some(r => r.id === targetId)) return ack(cb, { ok: false, error: 'That answer cannot be challenged now.' });
-      if (targetId === player.id) return ack(cb, { ok: false, error: 'You cannot challenge your own answer.' });
-      const key = `${room.round}:${targetId}:${category}`;
-      const votes = room.answerVotes.get(key) || new Set();
-      if (votes.has(player.id)) return ack(cb, { ok: false, error: 'You already flagged this answer.' });
-      votes.add(player.id); room.answerVotes.set(key, votes);
-      io.to(room.code).emit('answer:challenge:update', { targetId, category, votes: votes.size });
-      ack(cb, { ok: true, votes: votes.size, note: 'Flag recorded for host review. Scores are unchanged.' });
     });
 
     socket.on('game:next', (payload = {}, cb) => {
@@ -302,8 +207,8 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
     socket.on('game:rematch', (payload = {}, cb) => {
       const room = findRoom(payload), player = getPlayer(room, socket);
       if (!room || !player || room.hostId !== player.id || room.status !== 'finished') return ack(cb, { ok: false, error: 'Only the host can start a rematch.' });
-      room.players.forEach(p => { p.score = 0; p.ready = p.id === room.hostId; p.answers = Object.fromEntries(CATEGORIES.map(k => [k, ''])); p.submitted = false; });
-      room.round = 0; room.status = 'lobby'; room.letter = ''; room.results = []; room.timeLeft = 0; room.endsAt = null; room.bonusCategory = null; room.gameId = null; emitRoom(room); ack(cb, { ok: true });
+      room.players.forEach(p => { p.score = 0; p.ready = p.id === room.hostId; p.answers = Object.fromEntries(CATEGORIES.map(k => [k, ''])); p.submitted = false; p.submittedAt = null; });
+      room.round = 0; room.status = 'lobby'; room.letter = ''; room.results = []; room.bonusCategory = null; room.timeLeft = 0; room.endsAt = null; emitRoom(room); ack(cb, { ok: true });
     });
 
     socket.on('disconnect', () => {

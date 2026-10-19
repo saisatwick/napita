@@ -30,7 +30,7 @@ test('private rooms, reconnect, validation, scoring and rematch', async t => {
     await new Promise(resolve => game.io.close(resolve));
   });
 
-  const created = await emitAck(host, 'room:create', { name: 'Host', settings: { duration: 30, rounds: 1 } });
+  const created = await emitAck(host, 'room:create', { name: 'Host', settings: { duration: 30, rounds: 1, fixedLetter: 'N' } });
   assert.equal(created.ok, true);
   assert.match(created.room.code, /^[A-Z2-9]{4}$/);
   const joined = await emitAck(guest, 'room:join', { code: created.room.code.toLowerCase(), name: 'Guest' });
@@ -42,23 +42,29 @@ test('private rooms, reconnect, validation, scoring and rematch', async t => {
   assert.equal((await emitAck(host, 'game:start', { code: created.room.code })).ok, true);
   const playing = await started;
   const letter = playing.letter;
+  assert.equal(letter, 'N', 'fixed-letter rooms use the configured letter');
   assert.ok(playing.endsAt > Date.now(), 'round deadline is server-generated');
   assert.ok(playing.timeLeft > 0 && playing.timeLeft <= 30, 'round timer begins within configured duration');
-  const unique = `${letter}unique`;
-  const shared = `${letter}shared`;
-  const wrong = `${String.fromCharCode(letter.charCodeAt(0) === 90 ? 65 : letter.charCodeAt(0) + 1)}wrong`;
-  const hostAnswers = { name: shared, place: unique, animal: unique + 'a', thing: wrong };
-  const guestAnswers = { name: shared.toUpperCase(), place: unique + 'b', animal: unique + 'c', thing: unique + 'd' };
+  const hostAnswers = { name: 'Noah', place: 'Nagpur', animal: 'Newt', thing: 'Apple' };
+  const guestAnswers = { name: 'Noah', place: 'Nellore', animal: 'Newt', thing: 'Notebook' };
   assert.equal((await emitAck(host, 'answers:update', { code: created.room.code, answers: hostAnswers })).ok, true);
   assert.equal((await emitAck(guest, 'answers:update', { code: created.room.code, answers: guestAnswers })).ok, true);
   const resultsEvent = waitFor(host, 'room:update', room => room.status === 'results');
+  const hiddenAnswersEvent = waitFor(host, 'room:update', room => room.status === 'playing' && room.players.some(player => player.submitted));
   await emitAck(host, 'answers:submit', { code: created.room.code });
+  const liveRoom = await hiddenAnswersEvent;
+  assert.equal(liveRoom.players.find(player => player.id === joined.playerId).answers, undefined, 'other players cannot read draft answers before reveal');
   await emitAck(guest, 'answers:submit', { code: created.room.code });
   const results = await resultsEvent;
   const hostResult = results.results.find(r => r.id === created.playerId);
-  assert.equal(hostResult.categoryPoints.name, 5, 'case-insensitive duplicate answers earn matching points');
+  assert.equal(hostResult.categoryPoints.name, 5, 'duplicate valid names earn 5 points');
+  assert.equal(hostResult.categoryPoints.place, 10, 'valid unique Indian place names earn 10 points');
+  assert.equal(hostResult.categoryPoints.animal, 5, 'duplicate valid animals earn 5 points');
   assert.equal(hostResult.categoryPoints.thing, 0, 'answers starting with the wrong letter score zero');
-  assert.equal(hostResult.roundPoints, 5);
+  assert.equal(hostResult.roundPoints, 20);
+  const guestResult = results.results.find(r => r.id === joined.playerId);
+  assert.equal(guestResult.categoryPoints.place, 10, 'another valid Indian place name is recognised');
+  assert.equal(guestResult.categoryPoints.thing, 10, 'valid unique objects score correctly');
 
   assert.equal((await emitAck(host, 'game:next', { code: created.room.code })).ok, true);
   const finished = waitFor(host, 'room:update', room => room.status === 'finished');

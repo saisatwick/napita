@@ -1,6 +1,6 @@
 # NaPiTA
 
-A real-time multiplayer Name, Place, Animal, Thing game built with React, Vite, Express and Socket.IO.
+A real-time multiplayer **Name, Place, Animal, Thing** party game built with React, Vite, Express and Socket.IO.
 
 ## Run locally
 
@@ -17,26 +17,56 @@ npm run build
 npm start
 ```
 
+Run the automated unit tests with:
+
+```bash
+npm test
+```
+
 ## Deploy on Render
 
 - Build command: `npm install && npm run build`
 - Start command: `npm start`
 - Keep the app as one Node web service so Socket.IO and the built frontend share the same origin.
 
+## Optional AI-assisted validation
+
+The game works without an AI key using its local answer dictionary and room-review flow. To enable AI fallback for unfamiliar answers:
+
+1. Create an API key through the OpenAI API platform.
+2. In Render, open the NaPiTA service **Environment** settings and add `OPENAI_API_KEY`.
+3. Optionally add `OPENAI_VALIDATOR_MODEL` (default: `gpt-4o-mini`).
+4. Redeploy the service.
+
+The key is read only by the Node server. **Do not put it in React/Vite frontend code, commit it to Git, or expose it in `VITE_*` variables.** API usage is billed separately from a ChatGPT subscription. The validator sends a batch of unfamiliar answers, uses `store: false`, times out quickly, and falls back to review if the service is unavailable. An AI response is not a perfect authority; room appeals exist for disputed answers.
+
 ## Current features
 
 - Private rooms for up to 12 players, invite links/codes, ready state, reconnect grace period, real-time timer and hidden answers until reveal.
-- Classic, Chaos (random category earns double points) and Speed Run (30-second rounds) modes.
-- Optional Daily Letter room: uses the same date-based letter for players who start the daily challenge that day.
-- Category-aware common-answer dictionary for Name, Place, Animal and Thing, including common Indian names such as Jhansi and animals such as Quail. Unknown entries are handled conservatively; this is not an AI-powered dictionary and can still reject unusual valid answers.
-- Theme selector (Midnight, Classic, Matcha, Sunset) with saved preference and theme-aware form/input contrast.
-- Optional lightweight sound effects, including final-five-second countdown tones and submission confirmation.
-- Results reveal, round lore awards (top scorer / wildcard answer / last-second save), shareable results text, and host rematch flow.
-- Responsive category UI with notebook, map, paw and pencil motifs.
+- Classic, Chaos (one random category earns double points) and Speed Run (30-second rounds) modes. Speed Run locks the timer to 30 seconds in both UI and server settings.
+- Letter mix: Easy (common letters), Full alphabet, or Challenge (rarer letters). Daily Letter overrides the random letter.
+- Optional prompt packs: Around India, Movie Night, and Food & Brands. These are creative nudges only; they do not change the four categories or silently add stricter scoring rules.
+- Date-based Daily Letter challenge.
+- Category-aware dictionary for Name, Place, Animal and Thing, including Indian names such as Jhansi and animals such as Quail.
+- Spelling suggestions for likely typos; suggestions are not silently applied.
+- Optional AI fallback for unfamiliar answers and post-round room appeals for disputed category decisions. Wrong-letter answers cannot be appealed.
+- Theme selector (Midnight, Classic, Matcha, Sunset) with saved preference and theme-aware contrast for inputs, labels, scores, reveal cards and result panels.
+- Optional short sounds, including final-five-second countdown tones and submit confirmation.
+- Per-answer validation reasons, round/category score breakdowns, duplicate scoring and Chaos bonus.
+- Post-match recap based on actual recorded answers: accepted unique answers, duplicates, category points, per-player receipts, round score history and last-second submissions. Round awards are calculated from validated answers, not only total score.
+- Current-round draft answers are not included in public room broadcasts before the reveal. A reconnect response only includes the reconnecting player’s own draft.
+- Shareable result summary, rematch flow, responsive category UI with notebook, map, paw and pencil motifs.
 
-## Notes / limitations
+## Scoring rules
 
-- Room state is in memory. Active rooms disappear when the server restarts, and multi-instance hosting would need shared storage.
-- Daily Letter is a simple date-based challenge. It does not maintain global streaks or a cross-player daily leaderboard.
-- The answer dictionary is a starter list, not a complete authority. For a production AI fallback, add a server-side provider integration and API key via Render environment variables; never put a secret API key in frontend code or commit it to Git.
-- Browser speech/spell correction is device-dependent. The game uses native input hints rather than a separate spellchecking service.
+- Valid unique answer: 10 points.
+- Valid duplicate in the same category: 5 points for each player who entered that accepted answer.
+- Invalid, wrong-letter, blank, or unverified answer: 0 points until it is accepted through a room appeal (unverified answers are shown as needing review, not silently presented as confirmed wrong).
+- In Chaos mode, the selected category's points are doubled.
+
+## Limitations
+
+- Room state is in memory. Active rooms disappear when the server restarts; multi-instance hosting needs shared storage.
+- Daily Letter is a date-based challenge, not a cross-player global ranking or persistent streak service.
+- The local dictionary is deliberately incomplete. Without an AI key, unknown-but-plausible answers enter review/appeal instead of receiving automatic acceptance. AI can also make mistakes, so use the review flow for disputed answers.
+- Browser spelling hints depend on a local word list and are not a full spellchecker for every regional language.

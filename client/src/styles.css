@@ -286,3 +286,22 @@ button:disabled{cursor:not-allowed;opacity:.65}
 :root[data-theme="sunset"] .category-feature-card{--np-surface:#291923;--np-text:#fff0ee;--np-muted:#c7adb7;--np-line:#54313f}
 @media(max-width:720px){.category-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:25px}.category-feature-card{min-height:170px;padding:16px 15px 15px}.category-feature-kicker{font-size:9px;margin-bottom:14px}.category-feature-icon{width:49px;height:49px}.category-feature-icon img{width:29px;height:29px}.category-feature-card h2{font-size:18px}.category-feature-card p{font-size:11px}}
 @media(max-width:390px){.category-feature-grid{gap:9px}.category-feature-card{padding:13px;min-height:160px}.category-feature-kicker{letter-spacing:.7px;font-size:8px}}
+
+
+/* Notebook theme: visibly worn paper, earthy ink, rough margins and aged stationery. */
+:root[data-theme="notebook"]{color-scheme:light;--np-page:#cbb994;--np-surface:#e7d8b8;--np-text:#3d3327;--np-muted:#756650;--np-line:#b8a47f;--np-field:#eee2c7;--np-field-text:#352c22;--np-placeholder:#8e7b5e;--np-accent:#7b5838;--np-soft:#d8c6a2;--ink:#3d3327;--muted:#756650;--line:#b8a47f;--purple:#7b5838;--purple-dark:#62452e;--lilac:#ded0ad;--mint:#c4c7a5;--peach:#d9b39a;--yellow:#dfc783}
+:root[data-theme="notebook"] body{background:#cbb994;color:#3d3327}
+:root[data-theme="notebook"] .app-shell{background-color:#cbb994;background-image:radial-gradient(ellipse at 12% 8%,rgba(95,65,36,.13),transparent 27%),radial-gradient(ellipse at 87% 22%,rgba(255,249,220,.28),transparent 24%),radial-gradient(ellipse at 35% 78%,rgba(90,63,36,.10),transparent 30%),repeating-linear-gradient(0deg,rgba(75,53,32,.025) 0,rgba(75,53,32,.025) 1px,transparent 1px,transparent 4px)}
+:root[data-theme="notebook"] .topbar,:root[data-theme="notebook"] .footer{border-color:#a99470}
+:root[data-theme="notebook"] .panel,:root[data-theme="notebook"] .step-card,:root[data-theme="notebook"] .room-code-panel,:root[data-theme="notebook"] .players-panel,:root[data-theme="notebook"] .score-panel,:root[data-theme="notebook"] .answers-panel,:root[data-theme="notebook"] .final-leaderboard,:root[data-theme="notebook"] .match-insights{background:rgba(235,221,190,.92);border-color:#ad966f;box-shadow:2px 4px 0 rgba(83,59,34,.12)}
+:root[data-theme="notebook"] .text-input,:root[data-theme="notebook"] .code-input-wrap,:root[data-theme="notebook"] .select-wrap,:root[data-theme="notebook"] .round-chip,:root[data-theme="notebook"] .timer-chip,:root[data-theme="notebook"] .quiet-button{background:#e9dabb;border-color:#ad966f;color:#352c22}
+:root[data-theme="notebook"] .text-input,:root[data-theme="notebook"] .code-input-wrap input,:root[data-theme="notebook"] .select-wrap select,:root[data-theme="notebook"] .answer-card input{color:#352c22}
+:root[data-theme="notebook"] .text-input::placeholder,:root[data-theme="notebook"] .code-input-wrap input::placeholder,:root[data-theme="notebook"] .answer-card input::placeholder{color:#806e52;opacity:1}
+:root[data-theme="notebook"] .primary-button{background:#795638;color:#fff4d9;box-shadow:0 4px 0 #5d422c}
+:root[data-theme="notebook"] .secondary-button,:root[data-theme="notebook"] .help-button,:root[data-theme="notebook"] .theme-select-label{background:#e1cfaa;border-color:#a58d65;color:#65472f}
+:root[data-theme="notebook"] .category-feature-card{--np-surface:#e6d5b2;--np-text:#3d3327;--np-muted:#756650;--np-line:#ad966f;background:linear-gradient(145deg,rgba(255,247,218,.22),rgba(103,75,43,.04)),#e6d5b2;box-shadow:0 7px 0 rgba(92,65,37,.25)}
+:root[data-theme="notebook"] .app-shell::before{opacity:.82;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,rgba(77,118,151,.25) 28px),linear-gradient(90deg,transparent 0,transparent 62px,rgba(166,76,66,.48) 63px,transparent 65px);background-size:100% 28px,100% 100%;mask-image:none}
+:root[data-theme="notebook"] .app-shell::after{opacity:.32;filter:sepia(.65) saturate(.7)}
+:root[data-theme="notebook"] .category-doodles img{filter:sepia(.55) saturate(.75);opacity:.38}
+:root[data-theme="notebook"] .hero-copy,:root[data-theme="notebook"] .panel-heading p,:root[data-theme="notebook"] .players-header p,:root[data-theme="notebook"] .answers-panel>p,:root[data-theme="notebook"] .step-card p,:root[data-theme="notebook"] .secure-note,:root[data-theme="notebook"] .field-label{color:#756650}
+@media(max-width:700px){:root[data-theme="notebook"] .app-shell::before{background-size:100% 25px,100% 100%;opacity:.7}}

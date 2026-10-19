@@ -1,3 +1,6 @@
+import ENGLISH_LEXICON from './english-lexicon.json' with { type: 'json' };
+const ENGLISH_WORDS = new Set(ENGLISH_LEXICON);
+
 export const CATEGORY_KEYS = ['name', 'place', 'animal', 'thing'];
 
 // A practical starter dictionary, intentionally including common Indian names and places.
@@ -8,6 +11,13 @@ export const ANSWER_WORDS = {
   animal: `aardvark alligator alpaca ant anteater antelope ape badger bat bear beaver bee beetle bison boar buffalo butterfly camel capybara caracal cat caterpillar cheetah chicken chimpanzee chinchilla cobra cockroach cod cougar cow coyote crab crane crocodile crow deer dingo dog dolphin donkey dove dragonfly duck eagle eel elephant emu falcon ferret finch firefly flamingo fly fox frog gazelle gecko gerbil giraffe goat goose gorilla grasshopper hamster hare hawk hedgehog heron hippopotamus hornet horse hummingbird hyena ibex iguana impala jackal jaguar jay jellyfish kangaroo kingfisher kiwi koala komodo leopard lion lizard llama lobster locust loon lynx macaw magpie manatee mandrill meerkat mink mole mongoose monkey moose mosquito moth mouse mule narwhal newt nightingale octopus opossum orangutan orca oryx ostrich otter owl ox oyster panda panther parakeet parrot peacock pelican penguin pheasant pig pigeon piranha platypus porcupine porpoise possum prairie dog puffin puma quail quokka quetzal rabbit raccoon rat rattlesnake raven reindeer rhinoceros robin salamander salmon sardine scorpion seahorse seal shark sheep shrew skunk sloth snail snake sparrow spider squid squirrel starfish stingray stork swan tapir tarantula termite tiger toad tortoise toucan trout tuna turkey turtle viper vole vulture wallaby walrus wasp weasel whale wildcat wolf wombat woodpecker worm yak zebra`.split(' '),
   thing: `accordion adapter airplane album alarm ambulance anchor android angle anklet antenna apple apron arch arrow ashtray atlas backpack badge bag ball balloon banana bandage bank basket bat bathrobe battery bead bean bear bell belt bench bicycle binoculars blanket blender block board boat book bookmark bottle bowl box bracelet bread brick broom brush bucket button calendar camera can candle candleholder cap car card carpet cart case cassette castle chain chair chalk charger chessboard chisel chocolate clock cloth clothes hanger clutch comb compass computer cone cooker cork couch counter crayon cup curtain cushion dart dashboard desk diamond diary dice dictionary dish doghouse doll domino door doormat drawer dress drill drum dryer dustbin earphone earbuds easel eggbeater envelope eraser fan faucet feather fence file film filter fingernail flag flashlight flask flute folder fork frame freezer fridge funnel game garland gauge gem generator glass glove glue goggles gong grill guitar gunnybag hammer handbag hanger harmonica harp hat headphone helmet hook hose hourglass house icebox ink instrument iron jacket jar jeans jewel joystick jug kettle key keyboard kite knife ladder lamp lantern laptop latch leaf leash ledger lens letter light lighter lighterbox lipstick lock locker locket lunchbox machine magnet mailbox map marker match mattress medal megaphone microphone microscope mirror mixer mobile monitor mop motorcycle mountain mouse mug nail napkin needle necklace notebook nozzle nut oar ocarina oven pad paddle paint palette pan paper paperclip parachute parcel pen pencil pendant phone photo piano picture pillow pin pipe pitcher plane plant plate plug pliers plow pocketbook postcard pot potato printer projector purse puzzle quill quilt quiver racket radio rail ruler razor receipt remote ribbon ring robot rock roller roof rope router ruler sail sandwich saucepan scale scarf scissors scooter screen screwdriver sculpture seal seat sewing machine shaker shelf shell shirt shoe shovel shower sideboard sieve sign sink skateboard skirt sled slipper smartphone soap socket sofa software speaker spoon stamp stapler star statue steering wheel stove straw string suitcase switch table tablet tag tank tape teapot telescope television thermometer thread ticket tie tile timer toaster toilet tollbooth tool toothbrush toothpaste torch towel toy tractor train tray tree tricycle tripod trophy truck trumpet tub tube tuner umbrella uniform van vase vegetable wallet watch water bottle watering can weapon webcam wheel whistle whiteboard window wire wrench yoyo zip zipper`.split(' ')
 };
+
+
+// Additional common international names and locations; the starter list also contains Indian names and places.
+const EXTRA_NAMES = `aaron abigail adam adrian albert alex alexander alice amelia andrew angela anna anthony ariana arthur audrey ava benjamin brian bruno camila charles charlotte chloe christian claire daniel david delilah edward elena elijah elizabeth ella emma ethan eva evelyn ezra felix florence gabriel grace hannah henry isla isaac jack jacob james joseph julia julian leo leonard lewis liam lola lucas lucy madeline marcus maria mason matthew max maya mia michael milo nina oliver olivia oscar peter philip phoebe rachel samuel scarlett sebastian sophia theo thomas victoria william`.split(' ');
+const EXTRA_PLACES = `afghanistan albania algeria argentina armenia austria bangladesh belgium bhutan bolivia brazil cambodia chile china colombia croatia cyprus denmark ecuador estonia ethiopia finland georgia germany ghana greece hungary iceland indonesia iran iraq ireland israel italy jamaica jordan kazakhstan kenya kuwait laos latvia lebanon libya lithuania luxembourg malaysia malta mauritius mexico mongolia morocco myanmar nepal netherlands nigeria norway oman pakistan peru philippines poland portugal romania russia saudi arabia serbia slovakia slovenia somalia south africa south korea spain sri lanka sudan sweden switzerland syria taiwan thailand tunisia turkey ukraine united kingdom united states uruguay uzbekistan venezuela vietnam zambia zimbabwe`.split(' ');
+ANSWER_WORDS.name.push(...EXTRA_NAMES.filter(word => !ANSWER_WORDS.name.includes(word)));
+ANSWER_WORDS.place.push(...EXTRA_PLACES.filter(word => !ANSWER_WORDS.place.includes(word)));
 
 export function normalizeAnswer(value) {
   return String(value ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US').replace(/[’‘]/g, "'").replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, '');
@@ -61,21 +71,29 @@ export function validateLocally(answer, category, letter) {
   if (suggestion) return { status: 'review', reason: `Possible spelling mistake. Did you mean “${suggestion}”?`, suggestion, source: 'spellcheck' };
 
   const knownElsewhere = Object.entries(ANSWER_WORDS).find(([otherCategory, entries]) => otherCategory !== category && entries.includes(normalized));
-  if (category === 'name') {
-    // Don't pretend to know every regional name. Unknown names and possible nicknames
-    // remain reviewable instead of silently scoring as valid or being falsely rejected.
-    if (knownElsewhere) return { status: 'review', reason: `“${String(answer).trim()}” is usually listed as a ${knownElsewhere[0]}, but it could be a personal name or nickname. Ask the room to review it.`, suggestion: '', source: 'name-review' };
-    if (/^[a-z][a-z .'-]{1,38}$/i.test(String(answer).trim())) return { status: 'review', reason: 'This name is not in the local list. AI can check it if enabled, or the room can review it.', suggestion: '', source: 'name-review' };
-  }
-
   if (knownElsewhere) {
-    return { status: 'invalid', reason: `This is recognised as a ${knownElsewhere[0]}, not a ${category}.`, suggestion: '', source: 'dictionary' };
+    return { status: 'invalid', reason: `“${String(answer).trim()}” belongs to ${knownElsewhere[0]}, not ${category}. Try a ${category} starting with ${letter}.`, suggestion: '', source: 'category-dictionary' };
   }
 
-  // Place names are often local/regional; obvious place types are accepted without an external lookup.
-  if (category === 'place' && /^[a-z][a-z .'-]{1,50}$/i.test(String(answer).trim()) && /\b(city|town|village|river|mount|lake|street|park|state|country|beach|island|district|fort|temple|dam|valley|hill|airport)\b/i.test(String(answer))) {
-    return { status: 'valid', reason: 'Recognised place-type wording.', suggestion: '', source: 'local-rule' };
+  // Broad offline English-word coverage for ordinary objects/things. A curated category list
+  // always wins first; known animals/names/places are rejected in the wrong category above.
+  // Avoid accepting obvious function words and common verbs as Things.
+  const nonThingWords = new Set('about after again against among around because before being below between both could doing during each either enough every from further getting going having here into itself just many might more most much must neither other ought over same should since some such than that their them then there these they this those through under until very what when where which while whom whose will with would your accept add agree allow appear ask become begin believe bring build call carry change choose come continue create cut decide describe develop do draw drive eat explain feel find follow get give go grow happen have hear help hold keep know learn leave let like live look make mean move need open pass pay play put read remain remember run say seem set show sit speak spend stand start stay stop study take talk tell think try turn use wait walk want watch work write'.split(' '));
+  if (category === 'thing' && ENGLISH_WORDS.has(normalized) && !nonThingWords.has(normalized) && normalized.length >= 2) {
+    return { status: 'valid', reason: 'Recognised English word accepted as a thing.', suggestion: '', source: 'english-lexicon' };
   }
 
-  return { status: 'review', reason: 'Not in the local list. It can be checked by AI if enabled or reviewed by the room.', suggestion: '', source: 'local-review' };
+  // Unknown names/places are not silently put into manual review. If AI is configured, the
+  // server can replace this local decision; otherwise explain the category rule clearly.
+  if (category === 'name') {
+    return { status: 'invalid', reason: `“${String(answer).trim()}” is not in the recognised name list. Try a person’s name beginning with ${letter}.`, suggestion: '', source: 'name-dictionary' };
+  }
+  if (category === 'place') {
+    return { status: 'invalid', reason: `“${String(answer).trim()}” is not in the recognised place list. Try a country, city, town, region or landmark beginning with ${letter}.`, suggestion: '', source: 'place-dictionary' };
+  }
+  if (category === 'animal') {
+    return { status: 'invalid', reason: `“${String(answer).trim()}” is not in the recognised animal list. Try an animal beginning with ${letter}.`, suggestion: '', source: 'animal-dictionary' };
+  }
+
+  return { status: 'invalid', reason: `“${String(answer).trim()}” is not recognised as a ${category}. Try another answer beginning with ${letter}.`, suggestion: '', source: 'local-dictionary' };
 }

@@ -19,7 +19,14 @@ test('offers a correction for likely typos without silently rewriting the answer
   assert.equal(suggestSpelling('Qail', 'animal', 'Q'), 'Quail');
 });
 
-test('sends possible nickname words to review instead of guessing their category', () => {
-  assert.equal(validateLocally('Monkey', 'name', 'M').status, 'review');
-  assert.match(validateLocally('Monkey', 'name', 'M').reason, /nickname/i);
+test('rejects answers that clearly belong to another category without manual review', () => {
+  const vulture = validateLocally('Vulture', 'name', 'V');
+  assert.equal(vulture.status, 'invalid');
+  assert.match(vulture.reason, /animal, not name/i);
+  assert.equal(validateLocally('Vietnam', 'place', 'V').status, 'valid');
+  assert.equal(validateLocally('Van', 'thing', 'V').status, 'valid');
+});
+
+test('does not send unrecognised category answers to manual review', () => {
+  assert.equal(validateLocally('Monkey', 'name', 'M').status, 'invalid');
 });

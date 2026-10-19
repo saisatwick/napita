@@ -82,11 +82,11 @@ async function validateRoundAnswers(room, players) {
     for (const category of CATEGORIES) {
       const answer = cleanAnswer(player.answers[category]);
       let validation = validateLocally(answer, category, room.letter);
-      if (validation.status === 'review' && !validation.suggestion && answer && validForLetter(answer, room.letter)) {
+      if ((validation.status === 'review' && !validation.suggestion || validation.status === 'invalid' && ['name-dictionary','place-dictionary','animal-dictionary','local-dictionary'].includes(validation.source)) && answer && validForLetter(answer, room.letter)) {
         const key = validationCacheKey(answer, category, room.letter);
         const cached = validationCache.get(key);
         if (cached) validation = { ...cached };
-        else pending.set(key, { id: key, answer, category });
+        else pending.set(key, { id: key, answer, category, localValidation: validation });
       }
       perCategory[category] = validation;
     }
@@ -95,14 +95,14 @@ async function validateRoundAnswers(room, players) {
   if (pending.size) {
     const aiResults = await validateWithAI([...pending.values()], room.letter);
     for (const [key, candidate] of pending) {
-      const validation = aiResults.get(key) || { status: 'review', reason: 'Not enough information to verify this answer automatically. You can appeal it to the room.', suggestion: '', source: 'review' };
+      const validation = aiResults.get(key) || candidate.localValidation || { status: 'invalid', reason: 'This answer was not recognised by the local category dictionary.', suggestion: '', source: 'local-dictionary' };
       validationCache.set(key, validation);
       if (validationCache.size > 2500) validationCache.delete(validationCache.keys().next().value);
     }
     for (const player of players) {
       for (const category of CATEGORIES) {
         const old = validationByPlayer.get(player.id)[category];
-        if (old.status !== 'review' || old.suggestion || !player.answers[category] || !validForLetter(cleanAnswer(player.answers[category]), room.letter)) continue;
+        if (!(old.status === 'review' && !old.suggestion || old.status === 'invalid' && ['name-dictionary','place-dictionary','animal-dictionary','local-dictionary'].includes(old.source)) || old.suggestion || !player.answers[category] || !validForLetter(cleanAnswer(player.answers[category]), room.letter)) continue;
         const key = validationCacheKey(player.answers[category], category, room.letter);
         const cached = validationCache.get(key);
         if (cached) validationByPlayer.get(player.id)[category] = { ...cached };

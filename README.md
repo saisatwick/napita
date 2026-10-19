@@ -78,3 +78,10 @@ The home screen now remembers visits and daily streaks, plus completed matches, 
 ## Important persistence limitation
 
 Active multiplayer rooms still live in server memory. Socket.IO reconnect works while the server process and room still exist, but a server restart/deploy can clear active rooms. For true cross-restart recovery, add a persistent database (for example, a free-tier PostgreSQL provider) and store room/player/match state there before enabling multi-instance hosting.
+
+## Answer validation and Notebook theme
+
+- The offline validator includes a bundled 121k-entry English pronunciation lexicon for broad English-word recognition, curated category dictionaries, and expanded common international names and countries.
+- Known cross-category answers are rejected with a clear reason (for example, an animal entered under Name). Common object words can be accepted offline as Things.
+- For truly broad validation of uncommon names, regional places and category edge cases, configure `OPENAI_API_KEY` in the server environment. The server may ask the AI validator to resolve unknown dictionary entries; if no API key is configured, the local category lists are used and unknown answers are rejected with an explanation instead of being left in manual review.
+- The `Notebook · worn paper` theme adds an earthy, aged-paper palette, more visible blue ruled lines, a red margin, subtle grain and sepia stationery doodles. Classic, Midnight, Matcha and Sunset remain available.

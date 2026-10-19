@@ -245,7 +245,10 @@ button:disabled{cursor:not-allowed;opacity:.65}
 
 /* Subtle notebook-paper atmosphere across every theme, kept behind content. */
 .app-shell{position:relative;isolation:isolate;overflow:hidden}
-.app-shell::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.16;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--np-notebook-line,rgba(169,154,255,.16)) 32px),linear-gradient(90deg,transparent 0,transparent 42px,var(--np-notebook-margin,rgba(236,125,145,.12)) 43px,transparent 44px);background-size:100% 32px,100% 100%;mask-image:linear-gradient(to bottom,rgba(0,0,0,.7),transparent 72%)}
+.app-shell::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.24;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--np-notebook-line,rgba(169,154,255,.16)) 32px),linear-gradient(90deg,transparent 0,transparent 42px,var(--np-notebook-margin,rgba(236,125,145,.12)) 43px,transparent 44px);background-size:100% 32px,100% 100%;mask-image:linear-gradient(to bottom,rgba(0,0,0,.9),rgba(0,0,0,.22) 88%,transparent)}
+.app-shell::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.13;background-image:url('/doodle-book.png'),url('/doodle-map.png'),url('/doodle-paw.png'),url('/doodle-pencil.png');background-repeat:no-repeat;background-size:150px auto,135px auto,115px auto,145px auto;background-position:left 4% top 155px,right 4% top 380px,left 5% bottom 180px,right 6% bottom 90px}
+:root[data-theme="classic"] .app-shell::after{opacity:.18}
+@media(max-width:700px){.app-shell::after{background-size:88px auto,80px auto,70px auto,86px auto;background-position:left -8px top 190px,right -8px top 430px,left -10px bottom 220px,right -10px bottom 100px;opacity:.09}}
 :root[data-theme="classic"]{--np-notebook-line:rgba(109,98,151,.17);--np-notebook-margin:rgba(207,111,125,.22)}
 :root[data-theme="midnight"]{--np-notebook-line:rgba(169,154,255,.17);--np-notebook-margin:rgba(235,145,164,.16)}
 :root[data-theme="matcha"]{color-scheme:dark;--np-notebook-line:rgba(168,216,120,.17);--np-notebook-margin:rgba(240,181,126,.13);--np-text:#eff7e8;--np-muted:#a8b8a2;--np-accent:#a8d878;--np-panel:#18251d;--np-border:#344b39;--ink:#eff7e8;--muted:#a8b8a2;--line:#344b39;--purple:#a8d878;--purple-dark:#8fbd60}

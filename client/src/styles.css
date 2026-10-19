@@ -531,3 +531,11 @@ button,.category-feature-card{ -webkit-tap-highlight-color:transparent; }
 .topbar{border-bottom:0!important}
 .drawer-preferences{row-gap:10px;padding-bottom:22px}
 .drawer-preferences>.drawer-section-label{margin-bottom:4px}
+
+/* Header refinement: give the wordmark presence and move the tagline into the hero. */
+.topbar{border-bottom:0!important}
+.brand{gap:14px}
+.brand-mark{width:44px;height:44px;border-radius:14px;font-size:14px}
+.brand-name{font-size:clamp(29px,3vw,36px);letter-spacing:-1.8px;line-height:1}
+.hero-tagline{margin:0 auto 12px;color:var(--np-muted);font-size:clamp(13px,1.5vw,16px);font-weight:650;letter-spacing:.01em;line-height:1.5}
+@media(max-width:760px){.brand{gap:11px}.brand-mark{width:40px;height:40px;border-radius:13px;font-size:13px}.brand-name{font-size:clamp(27px,7vw,32px);letter-spacing:-1.5px}.hero-tagline{max-width:330px;font-size:13px}}

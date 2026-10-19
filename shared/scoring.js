@@ -22,8 +22,9 @@ export function calculateRoundScores(room, players, validationByPlayer) {
       const answer = normalizeAnswer(player.answers[category]);
       const validation = validationByPlayer.get(player.id)?.[category];
       if (!answer || validation?.status !== 'valid') continue;
-      let earned = validAnswerCounts[category].get(answer) === 1 ? 10 : 5;
-      if (room.settings.mode === 'chaos' && room.bonusCategory === category) earned *= 2;
+      // Fixed, fair scoring: unique valid = 10; same accepted answer in the same category = 5.
+      // A round can never exceed 40 points.
+      const earned = validAnswerCounts[category].get(answer) === 1 ? 10 : 5;
       categoryPoints[category] = earned;
       roundPoints += earned;
     }

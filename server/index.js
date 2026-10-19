@@ -215,7 +215,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
   function startRound(room) {
     if (room.timer) clearInterval(room.timer);
     room.status = 'playing'; room.finishing = false; room.appeals = {}; room.round += 1;
-    room.bonusCategory = room.settings.mode === 'chaos' ? CATEGORIES[randomBytes(1)[0] % CATEGORIES.length] : null;
+    room.bonusCategory = null;
     const letterPool = LETTER_POOLS[room.settings.letterDifficulty] || LETTERS;
     room.letter = room.settings.fixedLetter || letterPool[randomBytes(1)[0] % letterPool.length];
     room.timeLeft = room.settings.duration; room.endsAt = Date.now() + room.settings.duration * 1000; room.results = [];
@@ -243,7 +243,7 @@ export function createGameServer({ corsOrigin = '*' } = {}) {
       const duration = Number(payload.settings?.duration), rounds = Number(payload.settings?.rounds);
       const room = {
         code, hostId: playerId, status: 'lobby',
-        settings: { duration: payload.settings?.mode === 'speed' ? 30 : ([30, 45, 60, 90, 120].includes(duration) ? duration : 60), rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: ['classic', 'chaos', 'speed'].includes(payload.settings?.mode) ? payload.settings.mode : 'classic', letterDifficulty: ['easy', 'standard', 'challenge'].includes(payload.settings?.letterDifficulty) ? payload.settings.letterDifficulty : 'standard', promptPack: ['classic', 'india', 'movies', 'food'].includes(payload.settings?.promptPack) ? payload.settings.promptPack : 'classic', fixedLetter: /^[A-Z]$/.test(String(payload.settings?.fixedLetter || '').toUpperCase()) ? String(payload.settings.fixedLetter).toUpperCase() : null },
+        settings: { duration: payload.settings?.mode === 'speed' ? 30 : ([30, 45, 60, 90, 120].includes(duration) ? duration : 60), rounds: [1, 3, 5, 7, 10].includes(rounds) ? rounds : 3, mode: ['classic', 'speed'].includes(payload.settings?.mode) ? payload.settings.mode : 'classic', letterDifficulty: ['easy', 'standard', 'challenge'].includes(payload.settings?.letterDifficulty) ? payload.settings.letterDifficulty : 'standard', promptPack: ['classic', 'india', 'movies', 'food'].includes(payload.settings?.promptPack) ? payload.settings.promptPack : 'classic', fixedLetter: /^[A-Z]$/.test(String(payload.settings?.fixedLetter || '').toUpperCase()) ? String(payload.settings.fixedLetter).toUpperCase() : null },
         letter: '', round: 0, timeLeft: 0, endsAt: null, players: new Map(), results: [], history: [], appeals: {}, finishing: false, timer: null
       };
       const player = { id: playerId, token, socketId: socket.id, name: cleanName(payload.name), ready: true, score: 0, answers: Object.fromEntries(CATEGORIES.map(k => [k, ''])), submitted: false, submittedAt: null, connected: true, expiryTimer: null };

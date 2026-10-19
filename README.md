@@ -70,3 +70,11 @@ The key is read only by the Node server. **Do not put it in React/Vite frontend 
 - Daily Letter is a date-based challenge, not a cross-player global ranking or persistent streak service.
 - The local dictionary is deliberately incomplete. Without an AI key, unknown-but-plausible answers enter review/appeal instead of receiving automatic acceptance. AI can also make mistakes, so use the review flow for disputed answers.
 - Browser spelling hints depend on a local word list and are not a full spellchecker for every regional language.
+
+## Player memory and profile stats
+
+The home screen now remembers visits and daily streaks, plus completed matches, wins, losses, and recent result lore in `localStorage` under `napita-profile-v1`. These stats are private to the same browser/device and are not synced between devices or players. Clearing browser storage resets them. Do not present these local stats as a global account or leaderboard.
+
+## Important persistence limitation
+
+Active multiplayer rooms still live in server memory. Socket.IO reconnect works while the server process and room still exist, but a server restart/deploy can clear active rooms. For true cross-restart recovery, add a persistent database (for example, a free-tier PostgreSQL provider) and store room/player/match state there before enabling multi-instance hosting.

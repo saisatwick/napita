@@ -635,3 +635,45 @@ button,.category-feature-card{ -webkit-tap-highlight-color:transparent; }
 :root[data-theme="notebook"] .category-feature-card h2,
 :root[data-theme="notebook"] .category-feature-card p { color: #302317; }
 :root[data-theme="notebook"] .category-feature-card p { opacity: .9; }
+
+
+/* My Stats & Lore: achievements, personal records, and local match receipts. */
+.memory-records{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:13px 0 22px}
+.memory-records>div{display:flex;flex-direction:column;gap:7px;padding:13px;border-radius:13px;background:var(--surface-bg,rgba(255,255,255,.035));border:1px solid var(--border-color,rgba(170,153,255,.15))}
+.memory-records span{font-size:9px;letter-spacing:.1em;font-weight:800;color:var(--muted,#aaa7bb)}
+.memory-records strong{font-size:19px;color:var(--accent,#aa9aff);font-variant-numeric:tabular-nums}
+.memory-subheading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 11px}
+.memory-subheading>strong{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text,#f1eff8)}
+.memory-subheading>strong svg{color:var(--accent,#aa9aff)}
+.memory-subheading>span{font-size:11px;color:var(--muted,#aaa7bb)}
+.memory-achievements{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.memory-achievement{display:flex;align-items:center;gap:10px;min-width:0;padding:11px;border:1px solid var(--border-color,rgba(170,153,255,.15));border-radius:13px;background:var(--surface-bg,rgba(255,255,255,.035))}
+.memory-achievement>span{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border-radius:11px;background:var(--accent-soft,rgba(169,154,255,.16));font-size:19px}
+.memory-achievement>div{display:grid;gap:3px;min-width:0}
+.memory-achievement strong{font-size:11px;color:var(--text,#f1eff8)}
+.memory-achievement small{font-size:10px;line-height:1.35;color:var(--muted,#aaa7bb)}
+.memory-achievement.is-locked{opacity:.58}
+.memory-achievement.is-unlocked{border-color:var(--accent,#aa9aff)}
+.memory-history{display:grid;gap:0;border:1px solid var(--border-color,rgba(170,153,255,.15));border-radius:14px;overflow:hidden}
+.memory-history-row{display:flex;align-items:center;gap:11px;padding:12px;border-bottom:1px solid var(--border-color,rgba(170,153,255,.12));background:var(--surface-bg,rgba(255,255,255,.025));min-width:0}
+.memory-history-row:last-child{border-bottom:0}
+.history-result{display:grid;place-items:center;width:31px;height:31px;flex-shrink:0;border-radius:10px;font-size:12px;font-weight:900}
+.history-win{background:rgba(77,185,129,.15);color:#50b783}.history-loss{background:rgba(235,126,126,.13);color:#df8888}
+.history-match-main{display:grid;gap:4px;flex:1;min-width:0}
+.history-match-main strong{font-size:11px;color:var(--text,#f1eff8);overflow-wrap:anywhere}
+.history-match-main small{font-size:10px;color:var(--muted,#aaa7bb);line-height:1.45;overflow-wrap:anywhere}
+.history-score{font-size:15px;color:var(--accent,#aa9aff);white-space:nowrap}.history-score small{font-size:9px;color:var(--muted,#aaa7bb)}
+.memory-empty-history{display:flex;align-items:center;gap:10px;padding:16px;border:1px dashed var(--border-color,rgba(170,153,255,.2));border-radius:13px;color:var(--muted,#aaa7bb);font-size:12px;line-height:1.5}.memory-empty-history svg{flex-shrink:0;color:var(--accent,#aa9aff)}
+.memory-privacy-note{display:block;margin-top:16px}
+:root[data-theme="notebook"] .memory-records>div,:root[data-theme="notebook"] .memory-achievement,:root[data-theme="notebook"] .memory-history-row{background:#e1cca6;border-color:#aa8b60}
+:root[data-theme="notebook"] .memory-subheading>strong,:root[data-theme="notebook"] .memory-achievement strong,:root[data-theme="notebook"] .history-match-main strong{color:#302317}
+:root[data-theme="notebook"] .memory-records span,:root[data-theme="notebook"] .memory-subheading>span,:root[data-theme="notebook"] .memory-achievement small,:root[data-theme="notebook"] .history-match-main small,:root[data-theme="notebook"] .history-score small{color:#5e4933}
+@media(max-width:760px){.memory-achievements{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.memory-records{grid-template-columns:1fr 1fr}.memory-records>div:last-child{grid-column:1/-1}.memory-achievements{grid-template-columns:1fr}.memory-history-row{padding:10px;gap:8px}.memory-history-row .history-match-main strong{font-size:10px}}
+
+/* Smaller pencil cursor for a lighter touch while keeping the graphite tip visible. */
+@media (hover: hover) and (pointer: fine) {
+  body, body * { cursor: url('/pencil-cursor-small.png') 4 27, auto; }
+  a, button, [role='button'], summary, select, label, input[type='checkbox'], input[type='radio'], input[type='range'], input[type='color'] { cursor: pointer; }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea, [contenteditable='true'] { cursor: text; }
+}

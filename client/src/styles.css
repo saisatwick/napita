@@ -498,3 +498,36 @@ button,.category-feature-card{ -webkit-tap-highlight-color:transparent; }
 :root[data-theme="notebook"] .drawer-setting-button,
 @media(max-width:760px){.drawer-preferences{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:17px 19px}.drawer-theme-label select{max-width:none;width:100%}.drawer-setting-button{min-width:0;padding:0 8px}}
 @media(max-width:480px){.topbar{gap:8px}.top-actions{gap:0}.drawer-preferences{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.drawer-setting-button{min-width:0;font-size:12px}.drawer-theme-label select{max-width:none}}
+
+/* Notebook-inspired pencil cursor (desktop); preserve standard interaction cursors. */
+@media (hover: hover) and (pointer: fine) {
+  body,
+  body * {
+    cursor: url('/pencil-cursor.png') 4 28, auto;
+  }
+  a,
+  button,
+  [role='button'],
+  summary,
+  select,
+  label,
+  input[type='checkbox'],
+  input[type='radio'] {
+    cursor: pointer;
+  }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  [contenteditable='true'] {
+    cursor: text;
+  }
+  input[type='range'],
+  input[type='color'] {
+    cursor: pointer;
+  }
+}
+
+
+/* Final header/menu cleanup: no divider under the homepage brand, and a quieter preferences area. */
+.topbar{border-bottom:0!important}
+.drawer-preferences{row-gap:10px;padding-bottom:22px}
+.drawer-preferences>.drawer-section-label{margin-bottom:4px}

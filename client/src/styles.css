@@ -554,3 +554,84 @@ button,.category-feature-card{ -webkit-tap-highlight-color:transparent; }
 .footer-tagline{font-size:12px;font-weight:650;letter-spacing:.02em;color:var(--np-muted)}
 @media(max-width:760px){.footer{gap:12px;min-height:78px}.footer-brand{gap:9px}.footer-brand .brand-mark{width:34px;height:34px;border-radius:11px;font-size:11px}.footer-brand .brand-name{font-size:22px}.footer-tagline{font-size:10px}}
 @media(max-width:520px){.footer{flex-wrap:wrap;justify-content:space-between;padding:13px 0}.footer-tagline{order:3;width:100%;text-align:center}.footer-brand .brand-mark{width:31px;height:31px}.footer-brand .brand-name{font-size:20px}}
+
+/* Stronger pencil cursor: bold, warm graphite-and-wood silhouette. */
+@media (hover: hover) and (pointer: fine) {
+  body, body * { cursor: url('/pencil-cursor.png') 7 41, auto; }
+  a, button, [role='button'], summary, select, label,
+  input[type='checkbox'], input[type='radio'], input[type='range'], input[type='color'] { cursor: pointer; }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea, [contenteditable='true'] { cursor: text; }
+}
+
+/* Notebook: darker, warmer brown paper with clearer ink and controls. */
+:root[data-theme="notebook"] {
+  --np-page: #b39a76;
+  --np-surface: #d5bf99;
+  --np-text: #302317;
+  --np-muted: #5e4933;
+  --np-line: #947651;
+  --np-field: #d8c29c;
+  --np-field-text: #2e2116;
+  --np-placeholder: #6f5639;
+  --np-accent: #5b3b22;
+  --np-soft: #c7ad82;
+  --ink: #302317;
+  --muted: #5e4933;
+  --line: #947651;
+  --purple: #68482b;
+  --purple-dark: #4e321d;
+  --lilac: #d0bb95;
+  --mint: #b8bc91;
+  --peach: #cfa184;
+  --yellow: #d1b86e;
+}
+:root[data-theme="notebook"] body,
+:root[data-theme="notebook"] .app-shell {
+  background-color: #b39a76;
+}
+:root[data-theme="notebook"] .app-shell {
+  background-image:
+    radial-gradient(ellipse at 12% 8%, rgba(67,42,21,.22), transparent 29%),
+    radial-gradient(ellipse at 87% 22%, rgba(246,225,184,.18), transparent 25%),
+    radial-gradient(ellipse at 35% 78%, rgba(64,40,20,.16), transparent 31%),
+    repeating-linear-gradient(0deg, rgba(57,37,19,.045) 0, rgba(57,37,19,.045) 1px, transparent 1px, transparent 4px);
+}
+:root[data-theme="notebook"] .panel,
+:root[data-theme="notebook"] .step-card,
+:root[data-theme="notebook"] .room-code-panel,
+:root[data-theme="notebook"] .players-panel,
+:root[data-theme="notebook"] .score-panel,
+:root[data-theme="notebook"] .answers-panel,
+:root[data-theme="notebook"] .final-leaderboard,
+:root[data-theme="notebook"] .match-insights {
+  background: rgba(216,194,156,.97);
+  border-color: #8e6f49;
+}
+:root[data-theme="notebook"] .text-input,
+:root[data-theme="notebook"] .code-input-wrap,
+:root[data-theme="notebook"] .select-wrap,
+:root[data-theme="notebook"] .round-chip,
+:root[data-theme="notebook"] .timer-chip,
+:root[data-theme="notebook"] .quiet-button {
+  background: #cdb38a;
+  border-color: #8e6f49;
+  color: #2e2116;
+}
+:root[data-theme="notebook"] .hero-copy,
+:root[data-theme="notebook"] .panel-heading p,
+:root[data-theme="notebook"] .players-header p,
+:root[data-theme="notebook"] .answers-panel > p,
+:root[data-theme="notebook"] .step-card p,
+:root[data-theme="notebook"] .secure-note,
+:root[data-theme="notebook"] .field-label,
+:root[data-theme="notebook"] .footer {
+  color: #5e4933;
+}
+:root[data-theme="notebook"] .category-feature-card {
+  background: linear-gradient(145deg, rgba(255,241,207,.13), rgba(76,48,22,.09)), #d2b88d;
+  border-color: #8e6f49;
+}
+:root[data-theme="notebook"] .category-feature-card h2,
+:root[data-theme="notebook"] .category-feature-card p { color: #302317; }
+:root[data-theme="notebook"] .category-feature-card p { opacity: .9; }
